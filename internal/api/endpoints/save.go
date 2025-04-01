@@ -1,27 +1,40 @@
 package endpoints
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 
-	"github.com/vishenosik/CherryWatch/internal/services/endpoints/models"
+	apimodels "github.com/vishenosik/CherryWatch/internal/api/models"
+	"github.com/vishenosik/CherryWatch/pkg/httpjson"
 	dev "github.com/vishenosik/web-tools/log"
 )
 
 func (srv server) saveEndpoint() http.HandlerFunc {
 
-	const op = "authentication.http.IsAdmin"
+	const op = "api.endpoints.saveEndpoint"
+
+	log := srv.log.With(
+		dev.Operation(op),
+	)
 
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		log := srv.log.With(
-			dev.Operation(op),
-		)
+		endpoints, err := httpjson.Decode[apimodels.Endpoints](r)
+		if err != nil {
+			http.Error(w, "failed to decode request body", http.StatusBadRequest)
+			return
+		}
 
-		endpointID, err := srv.service.SaveEndpoint(r.Context(), &models.Endpoint{})
+		ctx, cancel := context.WithCancel(r.Context())
+		defer cancel()
+
+		req := apimodels.ToServiceEndpoints(endpoints)
+
+		err = srv.service.SaveEndpoint(ctx, req)
 
 		if err != nil {
-			log.Error("failed to check admin status", dev.Error(err))
+			log.Error("failed to save endpoints", dev.Error(err))
 
 			switch {
 			default:
@@ -30,16 +43,12 @@ func (srv server) saveEndpoint() http.HandlerFunc {
 			return
 		}
 
-		response := struct {
-			EndpointID string `json:"endpoint_id"`
-		}{
-			EndpointID: endpointID,
-		}
+		response := apimodels.FromServiceEndpoints(req)
 
 		w.Header().Set("Content-Type", "application/json")
+
 		if err := json.NewEncoder(w).Encode(response); err != nil {
-			log.Error("failed to encode response", dev.Error(err))
-			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			http.Error(w, "failed to encode response", http.StatusInternalServerError)
 			return
 		}
 	}

@@ -5,30 +5,30 @@ import (
 	"log/slog"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/vishenosik/CherryWatch/internal/services/endpoints/models"
+	"github.com/vishenosik/CherryWatch/internal/services/models"
 	"github.com/vishenosik/web-tools/api"
 )
 
 type Endpoints interface {
 	SaveEndpoint(
 		ctx context.Context,
-		endpoint *models.Endpoint,
-	) (endpointID string, err error)
+		endpoint models.Endpoints,
+	) (err error)
 }
 
-type authenticationAPI struct {
+type endpointsAPI struct {
 	log     *slog.Logger
 	service Endpoints
 }
 
-type server = *authenticationAPI
+type server = *endpointsAPI
 
 func NewAuthenticationServer(
 	log *slog.Logger,
 	service Endpoints,
-) *authenticationAPI {
+) *endpointsAPI {
 
-	return &authenticationAPI{
+	return &endpointsAPI{
 		log:     log,
 		service: service,
 	}
