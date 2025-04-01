@@ -1,0 +1,55 @@
+version: "3"
+
+dotenv: ['.env']
+
+env:
+  # internal folder
+  INTERNAL_WILDCARD: ./internal/...
+  # coverage file
+  COVERAGE_FILE: ./tests/cover.out
+
+tasks:
+
+  # MAIN
+
+  run-local:
+    desc: Run main application
+    cmd: go run ./cmd/watch
+
+  # TESTING
+
+  mock:
+    desc: Generates all mocks
+    cmd: go generate $INTERNAL_WILDCARD
+
+  # TOOLS
+
+  lint:
+    desc: Lint all files
+    cmd: fieldalignment -fix $INTERNAL_WILDCARD
+    ignore_error: true
+          
+  # DOCS
+
+  docs:
+    desc: Generate docs
+    env:
+      SWAG: swag init -g ./cmd/sso/main.go
+    cmds:
+      # make internal docs (go-based)
+      - $SWAG -o ./internal/gen/swagger --ot go
+      # make sdk docs (json,yaml)
+      - $SWAG -o ./sso-sdk/swagger --ot json,yaml --instanceName sso_swagger
+      # make env example
+      - go run ./cmd/sso/main.go --config.doc=./docs/.env.example
+
+  # SECURITY
+  security:
+    desc: Run security checks
+    cmds:
+      - gosec ./...
+
+  generate_hmac_key:
+    desc: Generate hmac_secret_file used to configure dgraph secrets so far
+    aliases: [gen-hmac]
+    cmd: tr -dc 'a-zA-Z0-9' < /dev/urandom | dd bs=1 count=32 of=./deploy/compose/dgraph/acl/hmac_secret
