@@ -31,7 +31,7 @@ type Endpoint struct {
 type Endpoints = []Endpoint
 
 func ToServiceEndpoints(edps Endpoints) models.Endpoints {
-	return devCol.ConvertFunc(edps, ToServiceEndpoint)
+	return devCol.ConvertSlice(edps, ToServiceEndpoint)
 }
 
 func ToServiceEndpoint(endpoint Endpoint) *models.Endpoint {
@@ -50,7 +50,7 @@ func ToServiceEndpoint(endpoint Endpoint) *models.Endpoint {
 }
 
 func FromServiceEndpoints(edps models.Endpoints) Endpoints {
-	return devCol.ConvertFunc(edps, FromServiceEndpoint)
+	return devCol.ConvertSlice(edps, FromServiceEndpoint)
 }
 
 func FromServiceEndpoint(endpoint *models.Endpoint) Endpoint {

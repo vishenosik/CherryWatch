@@ -10,10 +10,10 @@ import (
 )
 
 type Endpoints interface {
-	SaveEndpoint(
+	SaveEndpoints(
 		ctx context.Context,
-		endpoint models.Endpoints,
-	) (err error)
+		endpoints models.Endpoints,
+	) (added models.Endpoints, err error)
 }
 
 type endpointsAPI struct {

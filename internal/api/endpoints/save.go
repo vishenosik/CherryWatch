@@ -5,22 +5,14 @@ import (
 	"encoding/json"
 	"net/http"
 
-	apimodels "github.com/vishenosik/CherryWatch/internal/api/models"
+	"github.com/vishenosik/CherryWatch/internal/api/models"
 	"github.com/vishenosik/CherryWatch/pkg/httpjson"
-	dev "github.com/vishenosik/web-tools/log"
 )
 
 func (srv server) saveEndpoint() http.HandlerFunc {
-
-	const op = "api.endpoints.saveEndpoint"
-
-	log := srv.log.With(
-		dev.Operation(op),
-	)
-
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		endpoints, err := httpjson.Decode[apimodels.Endpoints](r)
+		endpoints, err := httpjson.Decode[models.Endpoints](r)
 		if err != nil {
 			http.Error(w, "failed to decode request body", http.StatusBadRequest)
 			return
@@ -29,13 +21,8 @@ func (srv server) saveEndpoint() http.HandlerFunc {
 		ctx, cancel := context.WithCancel(r.Context())
 		defer cancel()
 
-		req := apimodels.ToServiceEndpoints(endpoints)
-
-		err = srv.service.SaveEndpoint(ctx, req)
-
+		added, err := srv.service.SaveEndpoints(ctx, models.ToServiceEndpoints(endpoints))
 		if err != nil {
-			log.Error("failed to save endpoints", dev.Error(err))
-
 			switch {
 			default:
 				http.Error(w, "Internal server error", http.StatusInternalServerError)
@@ -43,7 +30,7 @@ func (srv server) saveEndpoint() http.HandlerFunc {
 			return
 		}
 
-		response := apimodels.FromServiceEndpoints(req)
+		response := models.FromServiceEndpoints(added)
 
 		w.Header().Set("Content-Type", "application/json")
 
