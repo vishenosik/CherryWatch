@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"path"
 
+	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/pkg/errors"
 )
@@ -13,7 +14,8 @@ const (
 )
 
 type Store struct {
-	db *sql.DB
+	db *sqlx.DB
+	EndpointsStore
 }
 
 func MustInitSqlite(StorePath string) *Store {
@@ -28,7 +30,7 @@ func NewSqliteStore(StorePath string) (*Store, error) {
 
 	const op = "Store.sqlite.New"
 
-	db, err := sql.Open("sqlite3", StorePath)
+	db, err := sqlx.Open("sqlite3", StorePath)
 	if err != nil {
 		return nil, errors.Wrap(err, op)
 	}
@@ -39,7 +41,7 @@ func NewSqliteStore(StorePath string) (*Store, error) {
 }
 
 func (Store *Store) DB() *sql.DB {
-	return Store.db
+	return Store.db.DB
 }
 
 func (Store *Store) Dialect() string {
