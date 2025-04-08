@@ -6,7 +6,7 @@ import (
 	embed "github.com/vishenosik/CherryWatch"
 	appctx "github.com/vishenosik/CherryWatch/internal/app/context"
 	sqlstore "github.com/vishenosik/CherryWatch/internal/store/sql"
-	"github.com/vishenosik/CherryWatch/internal/store/sql/providers/sqlite"
+	"github.com/vishenosik/CherryWatch/internal/store/sql/sqlite"
 	std "github.com/vishenosik/web-tools/log"
 	"github.com/vishenosik/web-tools/migrate"
 )
