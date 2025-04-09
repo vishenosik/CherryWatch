@@ -12,16 +12,16 @@ import (
 	"github.com/vishenosik/CherryWatch/internal/store/models"
 )
 
-type EndpointsStore struct {
+type endpoints struct {
 	db *sqlx.DB
 }
 
-func NewEndpointStorage(db *sqlx.DB) *EndpointsStore {
-	return &EndpointsStore{db: db}
+func newEndpoints(db *sqlx.DB) *endpoints {
+	return &endpoints{db: db}
 }
 
 // CreateEndpoint inserts a new endpoint into the database
-func (s *EndpointsStore) CreateEndpoints(edps models.Endpoints) error {
+func (s *endpoints) CreateEndpoints(edps models.Endpoints) error {
 
 	tx, err := s.db.Beginx()
 	if err != nil {
@@ -62,7 +62,7 @@ func (s *EndpointsStore) CreateEndpoints(edps models.Endpoints) error {
 }
 
 // GetAllEndpoints retrieves all endpoints using a single query
-func (s *EndpointsStore) GetAllEndpoints() (models.Endpoints, error) {
+func (s *endpoints) GetAllEndpoints() (models.Endpoints, error) {
 	// Enable WAL mode for better concurrent read performance
 	_, _ = s.db.Exec("PRAGMA journal_mode=WAL")
 
@@ -132,7 +132,7 @@ func (s *EndpointsStore) GetAllEndpoints() (models.Endpoints, error) {
 }
 
 // GetAllEndpoints retrieves all endpoints using a single query
-func (s *EndpointsStore) GetEndpoints(ids ...string) (models.Endpoints, error) {
+func (s *endpoints) GetEndpoints(ids ...string) (models.Endpoints, error) {
 
 	if len(ids) == 0 {
 		return nil, errors.New("nil ids")
@@ -213,7 +213,7 @@ func (s *EndpointsStore) GetEndpoints(ids ...string) (models.Endpoints, error) {
 }
 
 // // UpdateEndpoint modifies an existing endpoint
-// func (s *EndpointsStore) UpdateEndpoint(e *Endpoint) error {
+// func (s *endpoints) UpdateEndpoint(e *Endpoint) error {
 // 	tx, err := s.db.Begin()
 // 	if err != nil {
 // 		return err
@@ -276,7 +276,7 @@ func (s *EndpointsStore) GetEndpoints(ids ...string) (models.Endpoints, error) {
 // }
 
 // // UpdateEndpoints modifies multiple endpoints in a single transaction
-// func (s *EndpointsStore) UpdateEndpoints(endpoints []*Endpoint) error {
+// func (s *endpoints) UpdateEndpoints(endpoints []*Endpoint) error {
 // 	if len(endpoints) == 0 {
 // 		return nil
 // 	}
@@ -378,7 +378,7 @@ func (s *EndpointsStore) GetEndpoints(ids ...string) (models.Endpoints, error) {
 // }
 
 // // DeleteEndpoint removes an endpoint from the database
-// func (s *EndpointsStore) DeleteEndpoint(id string) error {
+// func (s *endpoints) DeleteEndpoint(id string) error {
 // 	_, err := s.db.Exec("DELETE FROM endpoints WHERE id = ?", id)
 // 	if err != nil {
 // 		return fmt.Errorf("failed to delete endpoint: %v", err)

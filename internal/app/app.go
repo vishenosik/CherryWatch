@@ -7,9 +7,13 @@ import (
 
 	grpcApp "github.com/vishenosik/CherryWatch/internal/app/grpc"
 	restApp "github.com/vishenosik/CherryWatch/internal/app/rest"
+	"github.com/vishenosik/CherryWatch/internal/store/sql/sqlite"
 
+	embed "github.com/vishenosik/CherryWatch"
 	appctx "github.com/vishenosik/CherryWatch/internal/app/context"
 	"github.com/vishenosik/web-tools/config"
+	std "github.com/vishenosik/web-tools/log"
+	"github.com/vishenosik/web-tools/migrate"
 )
 
 type App struct {
@@ -39,10 +43,13 @@ func NewApp() (*App, error) {
 	conf := appContext.Config
 
 	// Stores init
-	_, err := loadSqlStore(ctx)
-	if err != nil {
-		return nil, err
-	}
+	sqliteStore := sqlite.MustInitSqlite(appContext.Config.StorePath)
+
+	// Stores migration
+	migrate.NewMigrator(
+		std.NewStdLogger(appContext.Logger),
+		embed.Migrations,
+	).MustMigrate(sqliteStore)
 
 	grpcServer := grpcApp.NewGrpcApp(
 		log,

@@ -9,49 +9,48 @@ import (
 	"github.com/pkg/errors"
 )
 
-const (
-	dialect string = "sqlite"
-)
-
-type Store struct {
+type store struct {
 	db *sqlx.DB
-	EndpointsStore
+	*endpoints
 }
 
-func MustInitSqlite(StorePath string) *Store {
-	Store, err := NewSqliteStore(StorePath)
+func MustInitSqlite(storePath string) *store {
+	Store, err := NewSqliteStore(storePath)
 	if err != nil {
 		panic(err)
 	}
 	return Store
 }
 
-func NewSqliteStore(StorePath string) (*Store, error) {
+func NewSqliteStore(storePath string) (*store, error) {
 
 	const op = "Store.sqlite.New"
 
-	db, err := sqlx.Open("sqlite3", StorePath)
+	db, err := sqlx.Open("sqlite3", storePath)
 	if err != nil {
 		return nil, errors.Wrap(err, op)
 	}
 
-	return &Store{
-		db: db,
+	edps := newEndpoints(db)
+
+	return &store{
+		db:        db,
+		endpoints: edps,
 	}, nil
 }
 
-func (Store *Store) DB() *sql.DB {
-	return Store.db.DB
+func (str *store) DB() *sql.DB {
+	return str.db.DB
 }
 
-func (Store *Store) Dialect() string {
-	return dialect
+func (str *store) Dialect() string {
+	return "sqlite"
 }
 
-func (Store *Store) MigrationsPath() string {
-	return path.Join("migrations", dialect)
+func (str *store) MigrationsPath() string {
+	return path.Join("migrations", str.Dialect())
 }
 
-func (Store *Store) Stop() error {
-	return Store.db.Close()
+func (str *store) Stop() error {
+	return str.db.Close()
 }
