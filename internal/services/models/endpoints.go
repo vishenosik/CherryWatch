@@ -69,3 +69,27 @@ func (edp *Endpoint) Validate() error {
 
 	return errs.ErrorOrNil()
 }
+
+// FilterValidEndpoints takes a slice of Endpoints and returns a new slice
+// containing only the endpoints that pass validation
+func FilterValidEndpoints(endpoints Endpoints) (Endpoints, error) {
+
+	if len(endpoints) == 0 {
+		return nil, errors.Wrap(ErrNothingToAdd, "endpoints")
+	}
+
+	var errs *multierror.Error
+	validEndpoints := make(Endpoints, 0, len(endpoints))
+
+	for _, endpoint := range endpoints {
+		err := endpoint.Validate()
+		if err != nil {
+			errs = multierror.Append(errs, errors.Wrap(err, endpoint.ID))
+			continue
+		}
+		validEndpoints = append(validEndpoints, endpoint)
+
+	}
+
+	return validEndpoints, errs.ErrorOrNil()
+}

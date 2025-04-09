@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/hashicorp/go-multierror"
+	"github.com/stretchr/testify/assert"
 )
 
 func Test_EndpointValidation(t *testing.T) {
@@ -157,4 +159,93 @@ func Test_EndpointEdgeCases(t *testing.T) {
 			t.Errorf("empty success codes should be valid: %v", err)
 		}
 	})
+}
+
+func TestFilterValidEndpoints(t *testing.T) {
+	// Helper to create a valid base endpoint
+	validEndpoint := func() *Endpoint {
+		return &Endpoint{
+			ID:                   "550e8400-e29b-41d4-a716-446655440000",
+			ServiceName:          "valid-service",
+			URL:                  "https://example.com",
+			SuccessCodes:         []int{200, 201},
+			NotificationServices: []string{"slack", "email"},
+			Interval:             time.Minute,
+		}
+	}
+
+	tests := []struct {
+		name                  string
+		input                 Endpoints
+		expectedLen           int
+		expectedMultiErrCount int
+		expectedErr           bool
+	}{
+		{
+			name:        "empty slice",
+			input:       Endpoints{},
+			expectedLen: 0,
+			expectedErr: true,
+		},
+		{
+			name:        "nil slice",
+			input:       nil,
+			expectedLen: 0,
+			expectedErr: true,
+		},
+		{
+			name: "all valid endpoints",
+			input: Endpoints{
+				validEndpoint(),
+				validEndpoint(),
+				validEndpoint(),
+			},
+			expectedLen: 3,
+		},
+		{
+			name: "all invalid endpoints",
+			input: Endpoints{
+				{ID: ""}, // Missing ID
+				{ID: "550e8400-e29b-41d4-a716-446655440000", URL: "invalid-url"},    // Invalid URL
+				{ID: "550e8400-e29b-41d4-a716-446655440000", Interval: time.Second}, // Invalid interval
+			},
+			expectedLen:           0,
+			expectedMultiErrCount: 3,
+		},
+		{
+			name: "mixed valid and invalid",
+			input: Endpoints{
+				validEndpoint(),
+				{ID: ""}, // Invalid
+				validEndpoint(),
+				{ID: "550e8400-e29b-41d4-a716-446655440000", SuccessCodes: []int{601}}, // Invalid code
+			},
+			expectedLen:           2,
+			expectedMultiErrCount: 2,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := FilterValidEndpoints(tt.input)
+
+			// Check returned endpoints count
+			assert.Equal(t, tt.expectedLen, len(got), "unexpected number of valid endpoints")
+
+			// Check all returned endpoints are actually valid
+			for _, endpoint := range got {
+				assert.NoError(t, endpoint.Validate(), "returned endpoint should be valid")
+			}
+
+			// Check error count
+			if merr, ok := err.(*multierror.Error); ok {
+				assert.Equal(t, tt.expectedMultiErrCount, len(merr.Errors), "unexpected number of validation errors")
+			}
+
+			if tt.expectedErr {
+				assert.Error(t, err)
+			}
+
+		})
+	}
 }

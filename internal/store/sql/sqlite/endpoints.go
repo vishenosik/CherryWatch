@@ -1,6 +1,7 @@
 package sqlite
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"strconv"
@@ -22,12 +23,12 @@ func newEndpoints(db *sqlx.DB) *endpoints {
 }
 
 // CreateEndpoint inserts a new endpoint into the database
-func (s *endpoints) CreateEndpoints(edps srv_models.Endpoints) error {
-	return createEndpoints(s.db, models.FromServiceEndpoints(edps))
+func (s *endpoints) CreateEndpoints(ctx context.Context, edps srv_models.Endpoints) error {
+	return createEndpoints(ctx, s.db, models.FromServiceEndpoints(edps))
 }
 
 // CreateEndpoint inserts a new endpoint into the database
-func createEndpoints(db *sqlx.DB, edps *models.Endpoints) error {
+func createEndpoints(ctx context.Context, db *sqlx.DB, edps *models.Endpoints) error {
 
 	tx, err := db.Beginx()
 	if err != nil {
@@ -39,7 +40,7 @@ func createEndpoints(db *sqlx.DB, edps *models.Endpoints) error {
 		return errors.New("endpoints can't be empty")
 	}
 
-	_, err = tx.NamedExec(`
+	_, err = tx.NamedExecContext(ctx, `
 		INSERT INTO endpoints (id, service_name, url, interval)
     	VALUES (:id, :service_name, :url, :interval)`,
 		edps.Infos,
@@ -50,7 +51,7 @@ func createEndpoints(db *sqlx.DB, edps *models.Endpoints) error {
 
 	// Batch insert success codes
 	if len(edps.SuccessCodes) != 0 {
-		_, err = tx.NamedExec(`
+		_, err = tx.NamedExecContext(ctx, `
 			INSERT INTO endpoint_success_codes (endpoint_id, code) 
 			VALUES (:endpoint_id, :code)`,
 			edps.SuccessCodes,
@@ -61,7 +62,7 @@ func createEndpoints(db *sqlx.DB, edps *models.Endpoints) error {
 	}
 	// Batch insert notification services
 	if len(edps.NotificationServices) != 0 {
-		_, err = tx.NamedExec(`
+		_, err = tx.NamedExecContext(ctx, `
 	INSERT INTO endpoint_notification_services (endpoint_id, service_name)  
 	VALUES (:endpoint_id, :service_name)`,
 			edps.NotificationServices,

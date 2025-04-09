@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/hashicorp/go-multierror"
 	"github.com/vishenosik/CherryWatch/internal/api/models"
 	"github.com/vishenosik/CherryWatch/pkg/httpjson"
 )
@@ -23,7 +24,9 @@ func (srv server) saveEndpoint() http.HandlerFunc {
 
 		added, err := srv.service.SaveEndpoints(ctx, models.ToServiceEndpoints(endpoints))
 		if err != nil {
-			switch {
+			switch err.(type) {
+			case *multierror.Error:
+
 			default:
 				http.Error(w, "Internal server error", http.StatusInternalServerError)
 			}

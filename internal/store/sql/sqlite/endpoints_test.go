@@ -1,6 +1,7 @@
 package sqlite
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -32,7 +33,7 @@ func Test_getAllEndpoints(t *testing.T) {
 		},
 	}
 
-	err := store.CreateEndpoints(edps)
+	err := store.CreateEndpoints(context.Background(), edps)
 	require.NoError(t, err)
 
 	actual, err := store.GetEndpoints()
