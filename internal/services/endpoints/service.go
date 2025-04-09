@@ -48,7 +48,13 @@ func (srv *service) SaveEndpoints(
 	if err != nil {
 		if errs, ok := err.(*multierror.Error); ok {
 			validationErrs = errs
+		} else {
+			return nil, err
 		}
+	}
+
+	if len(filtered) == 0 {
+		return nil, models.ErrNothingToAdd
 	}
 
 	if err := srv.endpointsSaver.CreateEndpoints(ctx, filtered); err != nil {

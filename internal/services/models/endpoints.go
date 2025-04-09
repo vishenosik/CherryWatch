@@ -84,7 +84,7 @@ func FilterValidEndpoints(endpoints Endpoints) (Endpoints, error) {
 	for _, endpoint := range endpoints {
 		err := endpoint.Validate()
 		if err != nil {
-			errs = multierror.Append(errs, errors.Wrap(err, endpoint.ID))
+			errs = multierror.Append(errs, errors.Wrap(err, endpoint.ServiceName))
 			continue
 		}
 		validEndpoints = append(validEndpoints, endpoint)

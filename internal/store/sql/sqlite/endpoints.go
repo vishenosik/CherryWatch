@@ -36,7 +36,7 @@ func createEndpoints(ctx context.Context, db *sqlx.DB, edps *models.Endpoints) e
 	}
 	defer tx.Rollback()
 
-	if len(edps.Infos) == 0 {
+	if edps == nil || len(edps.Infos) == 0 {
 		return errors.New("endpoints can't be empty")
 	}
 

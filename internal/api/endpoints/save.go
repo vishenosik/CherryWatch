@@ -3,6 +3,7 @@ package endpoints
 import (
 	"context"
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"github.com/hashicorp/go-multierror"
@@ -22,18 +23,37 @@ func (srv server) saveEndpoint() http.HandlerFunc {
 		ctx, cancel := context.WithCancel(r.Context())
 		defer cancel()
 
+		var multiErr *multierror.Error
+
 		added, err := srv.service.SaveEndpoints(ctx, models.ToServiceEndpoints(endpoints))
 		if err != nil {
-			switch err.(type) {
-			case *multierror.Error:
-
-			default:
-				http.Error(w, "Internal server error", http.StatusInternalServerError)
+			errs, ok := err.(*multierror.Error)
+			if ok {
+				multiErr = errs
+				log.Println(ok, multiErr == nil, multiErr.Errors)
+			} else {
+				switch err {
+				default:
+					http.Error(w, "Internal server error", http.StatusInternalServerError)
+				}
+				return
 			}
-			return
+		}
+		var errors []string
+
+		if multiErr != nil {
+			for _, err := range multiErr.Errors {
+				errors = append(errors, err.Error())
+			}
 		}
 
-		response := models.FromServiceEndpoints(added)
+		response := struct {
+			AddedEndpoints models.Endpoints `json:"added_endpoints"`
+			Errors         []string         `json:"errors,omitempty"`
+		}{
+			AddedEndpoints: models.FromServiceEndpoints(added),
+			Errors:         errors,
+		}
 
 		w.Header().Set("Content-Type", "application/json")
 
