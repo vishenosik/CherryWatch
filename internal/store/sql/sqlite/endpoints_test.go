@@ -1,44 +1,54 @@
 package sqlite
 
 import (
-	"fmt"
 	"testing"
 
-	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	srv_models "github.com/vishenosik/CherryWatch/internal/services/models"
 )
 
-func Test_GetEndpoints_IN(t *testing.T) {
+func Test_getAllEndpoints(t *testing.T) {
 
-	query, args, err := sqlx.In(
-		`
-		SELECT 
-			e.id,
-			e.service_name,
-			e.url,
-			e.interval_seconds,
-			(
-				SELECT GROUP_CONCAT(code, ',') 
-				FROM endpoint_success_codes 
-				WHERE endpoint_id = e.id
-			) AS success_codes,
-			(
-				SELECT GROUP_CONCAT(service_name, ',') 
-				FROM endpoint_notification_services 
-				WHERE endpoint_id = e.id
-			) AS notification_services
-		FROM 
-			endpoints e
-		WHERE 
-			e.id IN (?)
-	`,
-		[]string{"id1", "id2", "id3"},
-	)
+	store, cancel := suite(t)
+	defer cancel()
 
-	assert.NoError(t, err)
+	edps := srv_models.Endpoints{
+		{
+			ID:           "1",
+			ServiceName:  "service1",
+			URL:          "urlurl",
+			SuccessCodes: []int{200, 201},
+		},
+		{
+			ID:           "2",
+			ServiceName:  "service2",
+			SuccessCodes: []int{},
+		},
+		{
+			ID:           "3",
+			ServiceName:  "service3",
+			SuccessCodes: []int{204, 304},
+		},
+	}
 
-	fmt.Println(query, args)
+	err := store.CreateEndpoints(edps)
+	require.NoError(t, err)
 
-	query = sqlx.Rebind(sqlx.DOLLAR, query) // приводим заполнители в нужный формат
-	fmt.Println(query)
+	actual, err := store.GetEndpoints()
+	require.NoError(t, err)
+	require.Len(t, actual, 3)
+
+	actual, err = store.GetEndpoints("1", "2")
+	require.NoError(t, err)
+	require.Len(t, actual, 2)
+
+	actual, err = store.GetEndpoints("1")
+	require.NoError(t, err)
+	require.Len(t, actual, 1)
+
+	assert.Equal(t, actual[0].ID, "1")
+	assert.Equal(t, actual[0].URL, "urlurl")
+	assert.Equal(t, actual[0].ServiceName, "service1")
+	assert.Equal(t, actual[0].SuccessCodes, []int{200, 201})
 }

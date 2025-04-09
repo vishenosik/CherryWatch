@@ -1,6 +1,7 @@
 package sqlite
 
 import (
+	"database/sql"
 	"fmt"
 	"strconv"
 	"strings"
@@ -34,6 +35,10 @@ func createEndpoints(db *sqlx.DB, edps *models.Endpoints) error {
 	}
 	defer tx.Rollback()
 
+	if len(edps.Infos) == 0 {
+		return errors.New("endpoints can't be empty")
+	}
+
 	_, err = tx.NamedExec(`
 		INSERT INTO endpoints (id, service_name, url, interval)
     	VALUES (:id, :service_name, :url, :interval)`,
@@ -44,23 +49,26 @@ func createEndpoints(db *sqlx.DB, edps *models.Endpoints) error {
 	}
 
 	// Batch insert success codes
-	_, err = tx.NamedExec(`
+	if len(edps.SuccessCodes) != 0 {
+		_, err = tx.NamedExec(`
 			INSERT INTO endpoint_success_codes (endpoint_id, code) 
 			VALUES (:endpoint_id, :code)`,
-		edps.SuccessCodes,
-	)
-	if err != nil {
-		return errors.Wrap(err, "failed to insert success codes")
+			edps.SuccessCodes,
+		)
+		if err != nil {
+			return errors.Wrap(err, "failed to insert success codes")
+		}
 	}
-
 	// Batch insert notification services
-	_, err = tx.NamedExec(`
+	if len(edps.NotificationServices) != 0 {
+		_, err = tx.NamedExec(`
 	INSERT INTO endpoint_notification_services (endpoint_id, service_name)  
 	VALUES (:endpoint_id, :service_name)`,
-		edps.NotificationServices,
-	)
-	if err != nil {
-		return errors.Wrap(err, "failed to insert notification services")
+			edps.NotificationServices,
+		)
+		if err != nil {
+			return errors.Wrap(err, "failed to insert notification services")
+		}
 	}
 
 	return tx.Commit()
@@ -152,7 +160,7 @@ func getEndpoints(db *sqlx.DB, ids ...string) (*models.Endpoints, error) {
 		return nil, fmt.Errorf("failed to configure IN statement: %v", err)
 	}
 
-	rows, err := db.Queryx(sqlx.Rebind(sqlx.DOLLAR, query), args)
+	rows, err := db.Queryx(sqlx.Rebind(sqlx.DOLLAR, query), args...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get endpoints: %v", err)
 	}
@@ -165,8 +173,8 @@ func handleRows(rows *sqlx.Rows) (*models.Endpoints, error) {
 
 	type row struct {
 		models.Info
-		Codes    string `db:"success_codes"`
-		Services string `db:"notification_services"`
+		Codes    sql.NullString `db:"success_codes"`
+		Services sql.NullString `db:"notification_services"`
 	}
 
 	endpoints := new(models.Endpoints)
@@ -181,31 +189,36 @@ func handleRows(rows *sqlx.Rows) (*models.Endpoints, error) {
 
 		endpoints.Infos = append(endpoints.Infos, &r.Info)
 
-		// Parse success codes
-		codes := strings.Split(r.Codes, ",")
+		if r.Codes.Valid {
 
-		for _, codeStr := range codes {
+			// Parse success codes
+			codes := strings.Split(r.Codes.String, ",")
 
-			code, err := strconv.Atoi(codeStr)
-			if err != nil {
-				continue
+			for _, codeStr := range codes {
+
+				code, err := strconv.Atoi(codeStr)
+				if err != nil {
+					continue
+				}
+
+				endpoints.SuccessCodes = append(endpoints.SuccessCodes, &models.SuccessCode{
+					ID:   r.ID,
+					Code: code,
+				})
 			}
-
-			endpoints.SuccessCodes = append(endpoints.SuccessCodes, &models.SuccessCode{
-				ID:   r.ID,
-				Code: code,
-			})
 		}
 
 		// Parse notification services
+		if r.Services.Valid {
 
-		srvs := strings.Split(r.Services, ",")
+			srvs := strings.Split(r.Services.String, ",")
 
-		for _, srv := range srvs {
-			endpoints.NotificationServices = append(endpoints.NotificationServices, &models.NotificationService{
-				ID:          r.ID,
-				ServiceName: srv,
-			})
+			for _, srv := range srvs {
+				endpoints.NotificationServices = append(endpoints.NotificationServices, &models.NotificationService{
+					ID:          r.ID,
+					ServiceName: srv,
+				})
+			}
 		}
 	}
 
