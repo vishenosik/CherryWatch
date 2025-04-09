@@ -1,4 +1,4 @@
-INSERT INTO endpoints (id, service_name, url, interval_seconds) VALUES
+INSERT INTO endpoints (id, service_name, url, interval) VALUES
 ('550e8400-e29b-41d4-a716-446655440000', 'User Service', 'https://api.example.com/users/health', 30),
 ('6ba7b810-9dad-11d1-80b4-00c04fd430c8', 'Payment Service', 'https://payments.example.com/status', 60),
 ('6ba7b811-9dad-11d1-80b4-00c04fd430c9', 'Inventory Service', 'https://inventory.example.com/healthcheck', 45),

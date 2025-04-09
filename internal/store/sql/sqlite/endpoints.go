@@ -1,15 +1,15 @@
 package sqlite
 
 import (
-	"database/sql"
 	"fmt"
+	"strconv"
 	"strings"
-	"time"
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3" // SQLite driver
 	"github.com/pkg/errors"
-	"github.com/vishenosik/CherryWatch/internal/store/models"
+	srv_models "github.com/vishenosik/CherryWatch/internal/services/models"
+	"github.com/vishenosik/CherryWatch/internal/store/sql/models"
 )
 
 type endpoints struct {
@@ -21,9 +21,14 @@ func newEndpoints(db *sqlx.DB) *endpoints {
 }
 
 // CreateEndpoint inserts a new endpoint into the database
-func (s *endpoints) CreateEndpoints(edps models.Endpoints) error {
+func (s *endpoints) CreateEndpoints(edps srv_models.Endpoints) error {
+	return createEndpoints(s.db, models.FromServiceEndpoints(edps))
+}
 
-	tx, err := s.db.Beginx()
+// CreateEndpoint inserts a new endpoint into the database
+func createEndpoints(db *sqlx.DB, edps *models.Endpoints) error {
+
+	tx, err := db.Beginx()
 	if err != nil {
 		return err
 	}
@@ -32,7 +37,7 @@ func (s *endpoints) CreateEndpoints(edps models.Endpoints) error {
 	_, err = tx.NamedExec(`
 		INSERT INTO endpoints (id, service_name, url, interval)
     	VALUES (:id, :service_name, :url, :interval)`,
-		edps,
+		edps.Infos,
 	)
 	if err != nil {
 		return errors.Wrap(err, "failed to insert endpoints")
@@ -42,7 +47,7 @@ func (s *endpoints) CreateEndpoints(edps models.Endpoints) error {
 	_, err = tx.NamedExec(`
 			INSERT INTO endpoint_success_codes (endpoint_id, code) 
 			VALUES (:endpoint_id, :code)`,
-		models.SuccessCodesBatch(edps),
+		edps.SuccessCodes,
 	)
 	if err != nil {
 		return errors.Wrap(err, "failed to insert success codes")
@@ -52,7 +57,7 @@ func (s *endpoints) CreateEndpoints(edps models.Endpoints) error {
 	_, err = tx.NamedExec(`
 	INSERT INTO endpoint_notification_services (endpoint_id, service_name)  
 	VALUES (:endpoint_id, :service_name)`,
-		models.NotificationServicesBatch(edps),
+		edps.NotificationServices,
 	)
 	if err != nil {
 		return errors.Wrap(err, "failed to insert notification services")
@@ -61,18 +66,37 @@ func (s *endpoints) CreateEndpoints(edps models.Endpoints) error {
 	return tx.Commit()
 }
 
+func (s *endpoints) GetEndpoints(ids ...string) (srv_models.Endpoints, error) {
+
+	var (
+		edps *models.Endpoints
+		err  error
+	)
+
+	if len(ids) != 0 {
+		edps, err = getEndpoints(s.db, ids...)
+	} else {
+		edps, err = getAllEndpoints(s.db)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+	return models.ToServiceEndpoints(edps), nil
+}
+
 // GetAllEndpoints retrieves all endpoints using a single query
-func (s *endpoints) GetAllEndpoints() (models.Endpoints, error) {
+func getAllEndpoints(db *sqlx.DB) (*models.Endpoints, error) {
 	// Enable WAL mode for better concurrent read performance
-	_, _ = s.db.Exec("PRAGMA journal_mode=WAL")
+	_, _ = db.Exec("PRAGMA journal_mode=WAL")
 
 	// Single query with GROUP_CONCAT for SQLite
-	rows, err := s.db.Query(`
+	rows, err := db.Queryx(`
 		SELECT 
 			e.id,
 			e.service_name,
 			e.url,
-			e.interval_seconds,
+			e.interval,
 			(
 				SELECT GROUP_CONCAT(code, ',') 
 				FROM endpoint_success_codes 
@@ -91,48 +115,11 @@ func (s *endpoints) GetAllEndpoints() (models.Endpoints, error) {
 	}
 	defer rows.Close()
 
-	var endpoints models.Endpoints
-	for rows.Next() {
-		var e models.Endpoint
-		var intervalSeconds int
-		var codesStr, servicesStr sql.NullString
-
-		err := rows.Scan(
-			&e.ID,
-			&e.ServiceName,
-			&e.URL,
-			&intervalSeconds,
-			&codesStr,
-			&servicesStr,
-		)
-		if err != nil {
-			return nil, fmt.Errorf("failed to scan endpoint: %v", err)
-		}
-
-		e.Interval = time.Duration(intervalSeconds) * time.Second
-
-		// Parse success codes
-		if codesStr.Valid {
-			codes := strings.Split(codesStr.String, ",")
-			e.SuccessCodes = make([]int, len(codes))
-			for i, code := range codes {
-				fmt.Sscanf(code, "%d", &e.SuccessCodes[i])
-			}
-		}
-
-		// Parse notification services
-		if servicesStr.Valid {
-			e.NotificationServices = strings.Split(servicesStr.String, ",")
-		}
-
-		endpoints = append(endpoints, e)
-	}
-
-	return endpoints, nil
+	return handleRows(rows)
 }
 
-// GetAllEndpoints retrieves all endpoints using a single query
-func (s *endpoints) GetEndpoints(ids ...string) (models.Endpoints, error) {
+// GetAllEndpoints retrieves endpoints with specified ids otherwise all endpoints retrieved
+func getEndpoints(db *sqlx.DB, ids ...string) (*models.Endpoints, error) {
 
 	if len(ids) == 0 {
 		return nil, errors.New("nil ids")
@@ -143,7 +130,7 @@ func (s *endpoints) GetEndpoints(ids ...string) (models.Endpoints, error) {
 			e.id,
 			e.service_name,
 			e.url,
-			e.interval_seconds,
+			e.interval,
 			(
 				SELECT GROUP_CONCAT(code, ',')
 				FROM endpoint_success_codes
@@ -165,48 +152,61 @@ func (s *endpoints) GetEndpoints(ids ...string) (models.Endpoints, error) {
 		return nil, fmt.Errorf("failed to configure IN statement: %v", err)
 	}
 
-	rows, err := s.db.Query(sqlx.Rebind(sqlx.DOLLAR, query), args)
+	rows, err := db.Queryx(sqlx.Rebind(sqlx.DOLLAR, query), args)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get endpoints: %v", err)
 	}
 	defer rows.Close()
 
-	var endpoints models.Endpoints
+	return handleRows(rows)
+}
+
+func handleRows(rows *sqlx.Rows) (*models.Endpoints, error) {
+
+	type row struct {
+		models.Info
+		Codes    string `db:"success_codes"`
+		Services string `db:"notification_services"`
+	}
+
+	endpoints := new(models.Endpoints)
 
 	for rows.Next() {
-		var e models.Endpoint
-		var intervalSeconds int
-		var codesStr, servicesStr sql.NullString
 
-		err := rows.Scan(
-			&e.ID,
-			&e.ServiceName,
-			&e.URL,
-			&intervalSeconds,
-			&codesStr,
-			&servicesStr,
-		)
+		var r row
+		err := rows.StructScan(&r)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan endpoint: %v", err)
 		}
 
-		e.Interval = time.Duration(intervalSeconds) * time.Second
+		endpoints.Infos = append(endpoints.Infos, &r.Info)
 
 		// Parse success codes
-		if codesStr.Valid {
-			codes := strings.Split(codesStr.String, ",")
-			e.SuccessCodes = make([]int, len(codes))
-			for i, code := range codes {
-				fmt.Sscanf(code, "%d", &e.SuccessCodes[i])
+		codes := strings.Split(r.Codes, ",")
+
+		for _, codeStr := range codes {
+
+			code, err := strconv.Atoi(codeStr)
+			if err != nil {
+				continue
 			}
+
+			endpoints.SuccessCodes = append(endpoints.SuccessCodes, &models.SuccessCode{
+				ID:   r.ID,
+				Code: code,
+			})
 		}
 
 		// Parse notification services
-		if servicesStr.Valid {
-			e.NotificationServices = strings.Split(servicesStr.String, ",")
-		}
 
-		endpoints = append(endpoints, e)
+		srvs := strings.Split(r.Services, ",")
+
+		for _, srv := range srvs {
+			endpoints.NotificationServices = append(endpoints.NotificationServices, &models.NotificationService{
+				ID:          r.ID,
+				ServiceName: srv,
+			})
+		}
 	}
 
 	return endpoints, nil

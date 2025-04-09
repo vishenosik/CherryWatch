@@ -10,12 +10,12 @@ import (
 func Test_EndpointValidation(t *testing.T) {
 	testingTable := []struct {
 		name        string
-		endpoint    *Endpoint
+		endpoint    Endpoint
 		expectError bool
 	}{
 		{
 			name: "valid endpoint",
-			endpoint: &Endpoint{
+			endpoint: Endpoint{
 				ID:                   uuid.NewString(),
 				ServiceName:          "valid_service",
 				URL:                  "https://example.com",
@@ -26,7 +26,7 @@ func Test_EndpointValidation(t *testing.T) {
 		},
 		{
 			name: "invalid interval",
-			endpoint: &Endpoint{
+			endpoint: Endpoint{
 				ID:                   uuid.NewString(),
 				ServiceName:          "valid_service",
 				URL:                  "https://example.com",
@@ -38,7 +38,7 @@ func Test_EndpointValidation(t *testing.T) {
 		},
 		{
 			name: "invalid UUID",
-			endpoint: &Endpoint{
+			endpoint: Endpoint{
 				ID:          "not-a-uuid",
 				ServiceName: "valid_service",
 				URL:         "https://example.com",
@@ -48,7 +48,7 @@ func Test_EndpointValidation(t *testing.T) {
 		},
 		{
 			name: "invalid service name - non-ascii",
-			endpoint: &Endpoint{
+			endpoint: Endpoint{
 				ID:          uuid.NewString(),
 				ServiceName: "服务", // Chinese characters
 				URL:         "https://example.com",
@@ -58,7 +58,7 @@ func Test_EndpointValidation(t *testing.T) {
 		},
 		{
 			name: "invalid URL",
-			endpoint: &Endpoint{
+			endpoint: Endpoint{
 				ID:          uuid.NewString(),
 				ServiceName: "valid_service",
 				URL:         "not-a-url",
@@ -68,7 +68,7 @@ func Test_EndpointValidation(t *testing.T) {
 		},
 		{
 			name: "invalid success code - too low",
-			endpoint: &Endpoint{
+			endpoint: Endpoint{
 				ID:           uuid.NewString(),
 				ServiceName:  "valid_service",
 				URL:          "https://example.com",
@@ -79,7 +79,7 @@ func Test_EndpointValidation(t *testing.T) {
 		},
 		{
 			name: "invalid success code - too high",
-			endpoint: &Endpoint{
+			endpoint: Endpoint{
 				ID:           uuid.NewString(),
 				ServiceName:  "valid_service",
 				URL:          "https://example.com",
@@ -90,7 +90,7 @@ func Test_EndpointValidation(t *testing.T) {
 		},
 		{
 			name: "invalid success code range format",
-			endpoint: &Endpoint{
+			endpoint: Endpoint{
 				ID:          uuid.NewString(),
 				ServiceName: "valid_service",
 				URL:         "https://example.com",
@@ -100,7 +100,7 @@ func Test_EndpointValidation(t *testing.T) {
 		},
 		{
 			name: "invalid success code range values",
-			endpoint: &Endpoint{
+			endpoint: Endpoint{
 				ID:          uuid.NewString(),
 				ServiceName: "valid_service",
 				URL:         "https://example.com",
@@ -110,7 +110,7 @@ func Test_EndpointValidation(t *testing.T) {
 		},
 		{
 			name: "invalid interval - too short",
-			endpoint: &Endpoint{
+			endpoint: Endpoint{
 				ID:          uuid.NewString(),
 				ServiceName: "valid_service",
 				URL:         "https://example.com",
@@ -135,7 +135,7 @@ func Test_EndpointValidation(t *testing.T) {
 
 func Test_EndpointEdgeCases(t *testing.T) {
 	t.Run("empty notification services", func(t *testing.T) {
-		e := &Endpoint{
+		e := Endpoint{
 			ID:          uuid.NewString(),
 			ServiceName: "test_service",
 			URL:         "https://example.com",
@@ -147,7 +147,7 @@ func Test_EndpointEdgeCases(t *testing.T) {
 	})
 
 	t.Run("empty success codes", func(t *testing.T) {
-		e := &Endpoint{
+		e := Endpoint{
 			ID:          uuid.NewString(),
 			ServiceName: "test_service",
 			URL:         "https://example.com",

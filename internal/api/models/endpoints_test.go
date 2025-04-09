@@ -182,21 +182,21 @@ func TestToServiceEndpoint(t *testing.T) {
 
 	tests := []struct {
 		name          string
-		input         Endpoint
-		expected      *models.Endpoint
+		input         *Endpoint
+		expected      models.Endpoint
 		expectError   bool
 		errorContains string
 	}{
 		{
 			name: "success with only success codes",
-			input: Endpoint{
+			input: &Endpoint{
 				ID:           baseEndpoint.ID,
 				ServiceName:  baseEndpoint.ServiceName,
 				URL:          baseEndpoint.URL,
 				SuccessCodes: []string{"200", "201", "204"},
 				Interval:     baseEndpoint.Interval,
 			},
-			expected: &models.Endpoint{
+			expected: models.Endpoint{
 				ID:           baseEndpoint.ID,
 				ServiceName:  baseEndpoint.ServiceName,
 				URL:          baseEndpoint.URL,
@@ -206,14 +206,14 @@ func TestToServiceEndpoint(t *testing.T) {
 		},
 		{
 			name: "success with only ranges",
-			input: Endpoint{
+			input: &Endpoint{
 				ID:           baseEndpoint.ID,
 				ServiceName:  baseEndpoint.ServiceName,
 				URL:          baseEndpoint.URL,
 				SuccessCodes: []string{"200-202", "404-404"},
 				Interval:     baseEndpoint.Interval,
 			},
-			expected: &models.Endpoint{
+			expected: models.Endpoint{
 				ID:           baseEndpoint.ID,
 				ServiceName:  baseEndpoint.ServiceName,
 				URL:          baseEndpoint.URL,
@@ -223,14 +223,14 @@ func TestToServiceEndpoint(t *testing.T) {
 		},
 		{
 			name: "success with codes and ranges",
-			input: Endpoint{
+			input: &Endpoint{
 				ID:           baseEndpoint.ID,
 				ServiceName:  baseEndpoint.ServiceName,
 				URL:          baseEndpoint.URL,
 				SuccessCodes: []string{"200", "500", "201-203", "404-405"},
 				Interval:     baseEndpoint.Interval,
 			},
-			expected: &models.Endpoint{
+			expected: models.Endpoint{
 				ID:           baseEndpoint.ID,
 				ServiceName:  baseEndpoint.ServiceName,
 				URL:          baseEndpoint.URL,
@@ -240,14 +240,14 @@ func TestToServiceEndpoint(t *testing.T) {
 		},
 		{
 			name: "success with duplicate codes",
-			input: Endpoint{
+			input: &Endpoint{
 				ID:           baseEndpoint.ID,
 				ServiceName:  baseEndpoint.ServiceName,
 				URL:          baseEndpoint.URL,
 				SuccessCodes: []string{"200", "200", "201", "201-203"},
 				Interval:     baseEndpoint.Interval,
 			},
-			expected: &models.Endpoint{
+			expected: models.Endpoint{
 				ID:           baseEndpoint.ID,
 				ServiceName:  baseEndpoint.ServiceName,
 				URL:          baseEndpoint.URL,
@@ -257,13 +257,13 @@ func TestToServiceEndpoint(t *testing.T) {
 		},
 		{
 			name: "empty success codes and ranges",
-			input: Endpoint{
+			input: &Endpoint{
 				ID:          baseEndpoint.ID,
 				ServiceName: baseEndpoint.ServiceName,
 				URL:         baseEndpoint.URL,
 				Interval:    baseEndpoint.Interval,
 			},
-			expected: &models.Endpoint{
+			expected: models.Endpoint{
 				ID:           baseEndpoint.ID,
 				ServiceName:  baseEndpoint.ServiceName,
 				URL:          baseEndpoint.URL,
@@ -273,14 +273,14 @@ func TestToServiceEndpoint(t *testing.T) {
 		},
 		{
 			name: "invalid range format",
-			input: Endpoint{
+			input: &Endpoint{
 				ID:           baseEndpoint.ID,
 				ServiceName:  baseEndpoint.ServiceName,
 				URL:          baseEndpoint.URL,
 				SuccessCodes: []string{"200-abc"},
 				Interval:     baseEndpoint.Interval,
 			},
-			expected: &models.Endpoint{
+			expected: models.Endpoint{
 				ID:           baseEndpoint.ID,
 				ServiceName:  baseEndpoint.ServiceName,
 				URL:          baseEndpoint.URL,
@@ -290,14 +290,14 @@ func TestToServiceEndpoint(t *testing.T) {
 		},
 		{
 			name: "invalid range (start > end)",
-			input: Endpoint{
+			input: &Endpoint{
 				ID:           baseEndpoint.ID,
 				ServiceName:  baseEndpoint.ServiceName,
 				URL:          baseEndpoint.URL,
 				SuccessCodes: []string{"300-200"},
 				Interval:     baseEndpoint.Interval,
 			},
-			expected: &models.Endpoint{
+			expected: models.Endpoint{
 				ID:           baseEndpoint.ID,
 				ServiceName:  baseEndpoint.ServiceName,
 				URL:          baseEndpoint.URL,
@@ -307,7 +307,7 @@ func TestToServiceEndpoint(t *testing.T) {
 		},
 		{
 			name: "with notification services",
-			input: Endpoint{
+			input: &Endpoint{
 				ID:                   baseEndpoint.ID,
 				ServiceName:          baseEndpoint.ServiceName,
 				URL:                  baseEndpoint.URL,
@@ -315,7 +315,7 @@ func TestToServiceEndpoint(t *testing.T) {
 				NotificationServices: []string{"slack", "email"},
 				Interval:             baseEndpoint.Interval,
 			},
-			expected: &models.Endpoint{
+			expected: models.Endpoint{
 				ID:                   baseEndpoint.ID,
 				ServiceName:          baseEndpoint.ServiceName,
 				URL:                  baseEndpoint.URL,
@@ -420,7 +420,7 @@ func TestFromServiceEndpoint(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    *models.Endpoint
-		expected Endpoint
+		expected *Endpoint
 	}{
 		{
 			name: "with consecutive success codes",
@@ -432,7 +432,7 @@ func TestFromServiceEndpoint(t *testing.T) {
 				NotificationServices: baseModel.NotificationServices,
 				Interval:             baseModel.Interval,
 			},
-			expected: Endpoint{
+			expected: &Endpoint{
 				ID:                   baseModel.ID,
 				ServiceName:          baseModel.ServiceName,
 				URL:                  baseModel.URL,
@@ -451,7 +451,7 @@ func TestFromServiceEndpoint(t *testing.T) {
 				NotificationServices: baseModel.NotificationServices,
 				Interval:             baseModel.Interval,
 			},
-			expected: Endpoint{
+			expected: &Endpoint{
 				ID:                   baseModel.ID,
 				ServiceName:          baseModel.ServiceName,
 				URL:                  baseModel.URL,
@@ -470,7 +470,7 @@ func TestFromServiceEndpoint(t *testing.T) {
 				NotificationServices: baseModel.NotificationServices,
 				Interval:             baseModel.Interval,
 			},
-			expected: Endpoint{
+			expected: &Endpoint{
 				ID:                   baseModel.ID,
 				ServiceName:          baseModel.ServiceName,
 				URL:                  baseModel.URL,
@@ -489,7 +489,7 @@ func TestFromServiceEndpoint(t *testing.T) {
 				NotificationServices: baseModel.NotificationServices,
 				Interval:             baseModel.Interval,
 			},
-			expected: Endpoint{
+			expected: &Endpoint{
 				ID:                   baseModel.ID,
 				ServiceName:          baseModel.ServiceName,
 				URL:                  baseModel.URL,
@@ -508,7 +508,7 @@ func TestFromServiceEndpoint(t *testing.T) {
 				NotificationServices: baseModel.NotificationServices,
 				Interval:             baseModel.Interval,
 			},
-			expected: Endpoint{
+			expected: &Endpoint{
 				ID:                   baseModel.ID,
 				ServiceName:          baseModel.ServiceName,
 				URL:                  baseModel.URL,

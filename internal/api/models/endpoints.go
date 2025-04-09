@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/vishenosik/CherryWatch/internal/services/models"
 	devCol "github.com/vishenosik/CherryWatch/pkg/collections"
 	"github.com/vishenosik/web-tools/collections"
@@ -14,7 +15,7 @@ import (
 
 type Endpoint struct {
 	// Endpoint identifier (uuid4 only)
-	ID string `json:"id"`
+	ID string `json:"id,omitempty"`
 	// Name of checked service (ascii symbols only)
 	ServiceName string `json:"service_name"`
 	// URL string to trigger during checks
@@ -28,19 +29,25 @@ type Endpoint struct {
 	Interval time.Duration `json:"time_interval"`
 }
 
-type Endpoints = []Endpoint
+type Endpoints = []*Endpoint
 
 func ToServiceEndpoints(edps Endpoints) models.Endpoints {
 	return devCol.ConvertSlice(edps, ToServiceEndpoint)
 }
 
-func ToServiceEndpoint(endpoint Endpoint) *models.Endpoint {
+func ToServiceEndpoint(endpoint *Endpoint) *models.Endpoint {
 	ranges, err := parseRanges(endpoint.SuccessCodes)
 	if err != nil {
 		// TODO: Probably want to warn about error
 	}
+
+	id := endpoint.ID
+	if id == "" {
+		id = uuid.NewString()
+	}
+
 	return &models.Endpoint{
-		ID:                   endpoint.ID,
+		ID:                   id,
 		ServiceName:          endpoint.ServiceName,
 		URL:                  endpoint.URL,
 		SuccessCodes:         ranges,
@@ -53,9 +60,9 @@ func FromServiceEndpoints(edps models.Endpoints) Endpoints {
 	return devCol.ConvertSlice(edps, FromServiceEndpoint)
 }
 
-func FromServiceEndpoint(endpoint *models.Endpoint) Endpoint {
+func FromServiceEndpoint(endpoint *models.Endpoint) *Endpoint {
 	ranges := codesRanges(endpoint.SuccessCodes)
-	return Endpoint{
+	return &Endpoint{
 		ID:                   endpoint.ID,
 		ServiceName:          endpoint.ServiceName,
 		URL:                  endpoint.URL,
@@ -106,7 +113,7 @@ func codesRanges(codes []int) []string {
 
 // ParseRanges converts slice of range strings to sorted unique []int
 func parseRanges(rangeStrs []string) ([]int, error) {
-	result := make([]int, 0, 0)
+	result := make([]int, 0, len(rangeStrs))
 	for _, rangeStr := range rangeStrs {
 		codes, err := parseRange(rangeStr)
 		if err != nil {

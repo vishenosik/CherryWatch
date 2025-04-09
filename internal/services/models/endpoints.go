@@ -10,6 +10,8 @@ import (
 )
 
 var (
+	// ID can't be empty
+	ErrID = errors.New("ID can't be empty")
 	// provided string is not URL
 	ErrURL = errors.New("provided string is not URL")
 	// time interval can't be less than time.Minute
@@ -37,15 +39,19 @@ type Endpoint struct {
 
 type Endpoints = []*Endpoint
 
-func (ep *Endpoint) Validate() error {
+func (edp *Endpoint) Validate() error {
 
 	var errs *multierror.Error
 
-	if ep.Interval < time.Minute {
+	if edp.ID == "" {
+		errs = multierror.Append(errs, ErrID)
+	}
+
+	if edp.Interval < time.Minute {
 		errs = multierror.Append(errs, ErrInterval)
 	}
 
-	for _, code := range ep.SuccessCodes {
+	for _, code := range edp.SuccessCodes {
 		if code <= 0 || code >= 600 {
 			errs = multierror.Append(errs, errors.Wrapf(ErrCode, "code %d", code))
 		}
@@ -53,11 +59,11 @@ func (ep *Endpoint) Validate() error {
 
 	valid := validator.New()
 
-	if err := valid.Var(ep.URL, "url"); err != nil {
+	if err := valid.Var(edp.URL, "url"); err != nil {
 		errs = multierror.Append(errs, ErrURL)
 	}
 
-	if err := valid.Var(ep.ServiceName, "ascii"); err != nil {
+	if err := valid.Var(edp.ServiceName, "ascii"); err != nil {
 		errs = multierror.Append(errs, ErrAscii)
 	}
 

@@ -9,20 +9,20 @@ import (
 	"github.com/pkg/errors"
 )
 
-type store struct {
+type Store struct {
 	db *sqlx.DB
 	*endpoints
 }
 
-func MustInitSqlite(storePath string) *store {
-	Store, err := NewSqliteStore(storePath)
+func MustInitSqlite(storePath string) *Store {
+	str, err := NewSqliteStore(storePath)
 	if err != nil {
 		panic(err)
 	}
-	return Store
+	return str
 }
 
-func NewSqliteStore(storePath string) (*store, error) {
+func NewSqliteStore(storePath string) (*Store, error) {
 
 	const op = "Store.sqlite.New"
 
@@ -33,24 +33,24 @@ func NewSqliteStore(storePath string) (*store, error) {
 
 	edps := newEndpoints(db)
 
-	return &store{
+	return &Store{
 		db:        db,
 		endpoints: edps,
 	}, nil
 }
 
-func (str *store) DB() *sql.DB {
+func (str *Store) DB() *sql.DB {
 	return str.db.DB
 }
 
-func (str *store) Dialect() string {
+func (str *Store) Dialect() string {
 	return "sqlite"
 }
 
-func (str *store) MigrationsPath() string {
+func (str *Store) MigrationsPath() string {
 	return path.Join("migrations", str.Dialect())
 }
 
-func (str *store) Stop() error {
+func (str *Store) Stop() error {
 	return str.db.Close()
 }
