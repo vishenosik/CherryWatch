@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/vishenosik/CherryWatch/internal/api/endpoints"
 	appctx "github.com/vishenosik/CherryWatch/internal/app/context"
 
 	"github.com/go-chi/chi/v5"
@@ -31,7 +32,7 @@ type Config struct {
 func NewRestApp(
 	ctx context.Context,
 	config Config,
-	// authenticationService authentication.Authentication,
+	endpointsService endpoints.Endpoints,
 ) *App {
 
 	err := config.Server.Validate()
@@ -39,7 +40,7 @@ func NewRestApp(
 		panic(errors.Wrap(err, "failed to validate REST config"))
 	}
 
-	app, err := newRestApp(ctx, config)
+	app, err := newRestApp(ctx, config, endpointsService)
 	if err != nil {
 		panic(err)
 	}
@@ -49,14 +50,14 @@ func NewRestApp(
 func newRestApp(
 	ctx context.Context,
 	config Config,
-	// authenticationService authentication.Authentication,
+	endpointsService endpoints.Endpoints,
 ) (*App, error) {
 
 	appContext := appctx.AppCtx(ctx)
 
 	log := appContext.Logger
 
-	// authentication := authentication.NewAuthenticationServer(log, authenticationService)
+	endpoints := endpoints.NewAuthenticationServer(log, endpointsService)
 
 	router := chi.NewRouter()
 	router.Use(
@@ -67,7 +68,7 @@ func newRestApp(
 
 	setRouters(
 		router,
-		// authentication,
+		endpoints,
 	)
 
 	return &App{
@@ -119,11 +120,11 @@ func (a *App) Stop(ctx context.Context) {
 }
 
 type Service interface {
-	InitRouters() *chi.Mux
+	Routers() *chi.Mux
 }
 
 func setRouters(router *chi.Mux, services ...Service) {
 	for i := range services {
-		router.Mount("/api", services[i].InitRouters())
+		router.Mount("/", services[i].Routers())
 	}
 }

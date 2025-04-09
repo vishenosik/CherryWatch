@@ -5,7 +5,6 @@ import (
 	"flag"
 	"log"
 	"os"
-	"time"
 
 	// pkg
 	"github.com/joho/godotenv"
@@ -17,17 +16,15 @@ import (
 )
 
 var (
-	conf *Config
 	//
 	ErrServerPortMustBeUnique = errors.New("port numbers must be unique")
 )
 
 type Config struct {
-	Env                   string `env:"ENV" default:"dev" validate:"oneof=dev prod test" desc:"The environment in which the application is running"`
-	StorePath             string `env:"STORE_PATH" default:"./storage/CherryWatch.db" validate:"required" desc:"Path to sqlite store"`
-	AuthenticationService AuthenticationService
-	GrpcConfig            GrpcServer
-	RestConfig            RestServer
+	Env        string `env:"ENV" default:"dev" validate:"oneof=dev prod test" desc:"The environment in which the application is running"`
+	StorePath  string `env:"STORE_PATH" default:"./storage/CherryWatch.db" validate:"required" desc:"Path to sqlite store"`
+	GrpcConfig GrpcServer
+	RestConfig RestServer
 }
 
 type RestServer struct {
@@ -36,10 +33,6 @@ type RestServer struct {
 
 type GrpcServer struct {
 	Port uint16 `env:"GRPC_PORT" default:"44844" desc:"gRPC server port"`
-}
-
-type AuthenticationService struct {
-	TokenTTL time.Duration `env:"AUTHENTICATION_TOKEN_TTL" default:"1h" desc:"Authentication service standart TTL"`
 }
 
 func init() {
