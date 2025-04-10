@@ -1,7 +1,7 @@
 package sqlite
 
 import (
-	"database/sql"
+	"fmt"
 	"path"
 
 	"github.com/jmoiron/sqlx"
@@ -9,6 +9,10 @@ import (
 	"github.com/pkg/errors"
 	"github.com/pressly/goose/v3"
 	embed "github.com/vishenosik/CherryWatch"
+)
+
+const (
+	dialect = "sqlite"
 )
 
 type Store struct {
@@ -28,42 +32,37 @@ func NewSqliteStore(storePath string) (*Store, error) {
 
 	const op = "Store.sqlite.New"
 
-	db, err := sqlx.Open("sqlite3", storePath)
+	db, err := connect(storePath)
 	if err != nil {
 		return nil, errors.Wrap(err, op)
 	}
 
-	// Stores migration
-	goose.SetBaseFS(embed.Migrations)
-
-	if err := goose.SetDialect("sqlite"); err != nil {
-		return nil, errors.Wrap(err, "could not set dialect "+"sqlite")
-	}
-
-	if err := goose.Up(db.DB, path.Join("migrations", "sqlite")); err != nil {
-		return nil, errors.Wrap(err, "could not run migrations up")
-	}
-
-	edps := newEndpoints(db)
-
 	return &Store{
 		db:        db,
-		endpoints: edps,
+		endpoints: newEndpoints(db),
 	}, nil
-}
-
-func (str *Store) DB() *sql.DB {
-	return str.db.DB
-}
-
-func (str *Store) Dialect() string {
-	return "sqlite"
-}
-
-func (str *Store) MigrationsPath() string {
-	return path.Join("migrations", str.Dialect())
 }
 
 func (str *Store) Close() error {
 	return str.db.Close()
+}
+
+func connect(storePath string) (*sqlx.DB, error) {
+
+	db, err := sqlx.Open("sqlite3", storePath)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to connect to sqlite")
+	}
+
+	goose.SetBaseFS(embed.Migrations)
+
+	if err := goose.SetDialect(dialect); err != nil {
+		return nil, fmt.Errorf("failed to set dialect %s: %w", dialect, err)
+	}
+
+	if err := goose.Up(db.DB, path.Join(embed.MigrationsPath, dialect)); err != nil {
+		return nil, errors.Wrap(err, "failed to run migrations up")
+	}
+
+	return db, nil
 }
