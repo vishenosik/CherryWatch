@@ -6,20 +6,14 @@ import (
 	srv_models "github.com/vishenosik/CherryWatch/internal/services/models"
 )
 
-type Info struct {
+type Endpoint struct {
 	ID          string        `db:"id"`
 	ServiceName string        `db:"service_name"`
 	URL         string        `db:"url"`
 	Interval    time.Duration `db:"interval"`
 }
 
-type Infos = []*Info
-
-type Endpoints struct {
-	Infos                Infos
-	SuccessCodes         SuccessCodes
-	NotificationServices NotificationServices
-}
+type Endpoints = []*Endpoint
 
 type SuccessCode struct {
 	ID   string `db:"endpoint_id"`
@@ -34,6 +28,12 @@ type NotificationService struct {
 }
 
 type NotificationServices = []*NotificationService
+
+type StoreEndpoints struct {
+	Endpoints            Endpoints
+	SuccessCodes         SuccessCodes
+	NotificationServices NotificationServices
+}
 
 func SuccessCodesBatch(edps srv_models.Endpoints) SuccessCodes {
 
@@ -68,21 +68,21 @@ func NotificationServicesBatch(edps srv_models.Endpoints) NotificationServices {
 }
 
 // Convert []*Endpoint to structured Endpoints model
-func FromServiceEndpoints(endpoints srv_models.Endpoints) *Endpoints {
+func FromServiceEndpoints(endpoints srv_models.Endpoints) *StoreEndpoints {
 	if len(endpoints) == 0 {
 		return nil
 	}
 
-	infos := make([]*Info, 0, len(endpoints))
-	successCodes := make([]*SuccessCode, 0)
-	notificationServices := make([]*NotificationService, 0)
+	infos := make(Endpoints, 0, len(endpoints))
+	successCodes := make(SuccessCodes, 0)
+	notificationServices := make(NotificationServices, 0)
 
 	for _, endpoint := range endpoints {
 		if endpoint == nil {
 			continue
 		}
 
-		infos = append(infos, &Info{
+		infos = append(infos, &Endpoint{
 			ID:          endpoint.ID,
 			ServiceName: endpoint.ServiceName,
 			URL:         endpoint.URL,
@@ -104,16 +104,16 @@ func FromServiceEndpoints(endpoints srv_models.Endpoints) *Endpoints {
 		}
 	}
 
-	return &Endpoints{
-		Infos:                infos,
+	return &StoreEndpoints{
+		Endpoints:            infos,
 		SuccessCodes:         successCodes,
 		NotificationServices: notificationServices,
 	}
 }
 
 // Convert structured Endpoints back to []*Endpoint
-func ToServiceEndpoints(structured *Endpoints) srv_models.Endpoints {
-	if structured == nil || len(structured.Infos) == 0 {
+func ToServiceEndpoints(structured *StoreEndpoints) srv_models.Endpoints {
+	if structured == nil || len(structured.Endpoints) == 0 {
 		return nil
 	}
 
@@ -128,8 +128,8 @@ func ToServiceEndpoints(structured *Endpoints) srv_models.Endpoints {
 		notificationServicesMap[service.ID] = append(notificationServicesMap[service.ID], service.ServiceName)
 	}
 
-	endpoints := make(srv_models.Endpoints, 0, len(structured.Infos))
-	for _, info := range structured.Infos {
+	endpoints := make(srv_models.Endpoints, 0, len(structured.Endpoints))
+	for _, info := range structured.Endpoints {
 		endpoint := &srv_models.Endpoint{
 			ID:                   info.ID,
 			ServiceName:          info.ServiceName,

@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/jmoiron/sqlx"
-	_ "github.com/mattn/go-sqlite3" // SQLite driver
+	"github.com/mattn/go-sqlite3"
 	"github.com/pkg/errors"
 	srv_models "github.com/vishenosik/CherryWatch/internal/services/models"
 	"github.com/vishenosik/CherryWatch/internal/store/sql/models"
@@ -28,7 +28,7 @@ func (s *endpoints) CreateEndpoints(ctx context.Context, edps srv_models.Endpoin
 }
 
 // CreateEndpoint inserts a new endpoint into the database
-func createEndpoints(ctx context.Context, db *sqlx.DB, edps *models.Endpoints) error {
+func createEndpoints(ctx context.Context, db *sqlx.DB, edps *models.StoreEndpoints) error {
 
 	tx, err := db.Beginx()
 	if err != nil {
@@ -36,16 +36,20 @@ func createEndpoints(ctx context.Context, db *sqlx.DB, edps *models.Endpoints) e
 	}
 	defer tx.Rollback()
 
-	if edps == nil || len(edps.Infos) == 0 {
+	if edps == nil || len(edps.Endpoints) == 0 {
 		return errors.New("endpoints can't be empty")
 	}
 
 	_, err = tx.NamedExecContext(ctx, `
 		INSERT INTO endpoints (id, service_name, url, interval)
     	VALUES (:id, :service_name, :url, :interval)`,
-		edps.Infos,
+		edps.Endpoints,
 	)
 	if err != nil {
+		var sqliteErr sqlite3.Error
+		if errors.As(err, &sqliteErr) && sqliteErr.ExtendedCode == sqlite3.ErrConstraintUnique {
+			return errors.Wrap(models.ErrAlreadyExists, "failed to insert endpoints")
+		}
 		return errors.Wrap(err, "failed to insert endpoints")
 	}
 
@@ -78,7 +82,7 @@ func createEndpoints(ctx context.Context, db *sqlx.DB, edps *models.Endpoints) e
 func (s *endpoints) GetEndpoints(ids ...string) (srv_models.Endpoints, error) {
 
 	var (
-		edps *models.Endpoints
+		edps *models.StoreEndpoints
 		err  error
 	)
 
@@ -95,7 +99,7 @@ func (s *endpoints) GetEndpoints(ids ...string) (srv_models.Endpoints, error) {
 }
 
 // GetAllEndpoints retrieves all endpoints using a single query
-func getAllEndpoints(db *sqlx.DB) (*models.Endpoints, error) {
+func getAllEndpoints(db *sqlx.DB) (*models.StoreEndpoints, error) {
 	// Enable WAL mode for better concurrent read performance
 	_, _ = db.Exec("PRAGMA journal_mode=WAL")
 
@@ -128,7 +132,7 @@ func getAllEndpoints(db *sqlx.DB) (*models.Endpoints, error) {
 }
 
 // GetAllEndpoints retrieves endpoints with specified ids otherwise all endpoints retrieved
-func getEndpoints(db *sqlx.DB, ids ...string) (*models.Endpoints, error) {
+func getEndpoints(db *sqlx.DB, ids ...string) (*models.StoreEndpoints, error) {
 
 	if len(ids) == 0 {
 		return nil, errors.New("nil ids")
@@ -170,15 +174,15 @@ func getEndpoints(db *sqlx.DB, ids ...string) (*models.Endpoints, error) {
 	return handleRows(rows)
 }
 
-func handleRows(rows *sqlx.Rows) (*models.Endpoints, error) {
+func handleRows(rows *sqlx.Rows) (*models.StoreEndpoints, error) {
 
 	type row struct {
-		models.Info
+		models.Endpoint
 		Codes    sql.NullString `db:"success_codes"`
 		Services sql.NullString `db:"notification_services"`
 	}
 
-	endpoints := new(models.Endpoints)
+	endpoints := new(models.StoreEndpoints)
 
 	for rows.Next() {
 
@@ -188,7 +192,7 @@ func handleRows(rows *sqlx.Rows) (*models.Endpoints, error) {
 			return nil, fmt.Errorf("failed to scan endpoint: %v", err)
 		}
 
-		endpoints.Infos = append(endpoints.Infos, &r.Info)
+		endpoints.Endpoints = append(endpoints.Endpoints, &r.Endpoint)
 
 		if r.Codes.Valid {
 

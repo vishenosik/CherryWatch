@@ -197,15 +197,15 @@ func TestConverters(t *testing.T) {
 		structured := FromServiceEndpoints(endpoints)
 
 		assert.NotNil(t, structured)
-		assert.Len(t, structured.Infos, 2)
+		assert.Len(t, structured.Endpoints, 2)
 		assert.Len(t, structured.SuccessCodes, 4)
 		assert.Len(t, structured.NotificationServices, 3)
 
 		// Verify the first endpoint
-		assert.Equal(t, "123", structured.Infos[0].ID)
-		assert.Equal(t, "service1", structured.Infos[0].ServiceName)
-		assert.Equal(t, "http://service1.com", structured.Infos[0].URL)
-		assert.Equal(t, 30*time.Second, structured.Infos[0].Interval)
+		assert.Equal(t, "123", structured.Endpoints[0].ID)
+		assert.Equal(t, "service1", structured.Endpoints[0].ServiceName)
+		assert.Equal(t, "http://service1.com", structured.Endpoints[0].URL)
+		assert.Equal(t, 30*time.Second, structured.Endpoints[0].Interval)
 
 		// Verify success codes for first endpoint
 		var codesForFirst []int
@@ -235,8 +235,8 @@ func TestConverters(t *testing.T) {
 	})
 
 	t.Run("TestConvertStructuredToSliceEndpoints", func(t *testing.T) {
-		structured := &Endpoints{
-			Infos: []*Info{
+		structured := &StoreEndpoints{
+			Endpoints: []*Endpoint{
 				{
 					ID:          "123",
 					ServiceName: "service1",
@@ -289,7 +289,7 @@ func TestConverters(t *testing.T) {
 		endpoints := ToServiceEndpoints(nil)
 		assert.Nil(t, endpoints)
 
-		endpoints = ToServiceEndpoints(&Endpoints{Infos: []*Info{}})
+		endpoints = ToServiceEndpoints(&StoreEndpoints{Endpoints: []*Endpoint{}})
 		assert.Nil(t, endpoints)
 	})
 
