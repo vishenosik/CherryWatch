@@ -7,6 +7,4 @@ var (
 	ErrNotFound = errors.New("not found")
 	// exists already
 	ErrAlreadyExists = errors.New("exists already")
-	// nothing to add
-	ErrNothingToCreate = errors.New("nothing to add")
 )

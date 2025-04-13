@@ -42,12 +42,13 @@ func (srv *service) SaveEndpoints(
 	ctx context.Context,
 	endpoints models.Endpoints,
 ) (added models.Endpoints, err error) {
-	var validationErrs *multierror.Error
+
+	var errs *multierror.Error
 
 	filtered, err := models.FilterValidEndpoints(endpoints)
 	if err != nil {
-		if errs, ok := err.(*multierror.Error); ok {
-			validationErrs = errs
+		if validErrs, ok := err.(*multierror.Error); ok {
+			errs = multierror.Append(errs, validErrs)
 		} else {
 			return nil, err
 		}
@@ -56,10 +57,15 @@ func (srv *service) SaveEndpoints(
 	if len(filtered) == 0 {
 		return nil, models.ErrNothingToAdd
 	}
+
 	created, err := srv.endpointsSaver.CreateEndpoints(ctx, filtered)
 	if err != nil {
-		return nil, err
+		if storeErrs, ok := err.(*multierror.Error); ok {
+			errs = multierror.Append(errs, storeErrs)
+		} else {
+			return nil, err
+		}
 	}
 
-	return created, validationErrs.ErrorOrNil()
+	return created, errs.ErrorOrNil()
 }

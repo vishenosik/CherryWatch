@@ -33,12 +33,6 @@ func (s *endpoints) CreateEndpoints(ctx context.Context, edps srv_models.Endpoin
 // CreateEndpoint inserts a new endpoint into the database
 func createEndpoints(ctx context.Context, db *sqlx.DB, edps models.Endpoints) (models.Endpoints, error) {
 
-	const op = "createEndpoints"
-
-	if len(edps) == 0 {
-		return nil, errors.Wrap(models.ErrNothingToCreate, op)
-	}
-
 	// Prepare statements
 	insertEdps, err := db.PrepareNamed(`
 		INSERT INTO endpoints (id, service_name, url, interval)
