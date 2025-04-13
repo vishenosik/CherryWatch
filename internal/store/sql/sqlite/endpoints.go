@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/hashicorp/go-multierror"
 	"github.com/jmoiron/sqlx"
-	"github.com/mattn/go-sqlite3"
 	"github.com/pkg/errors"
 	srv_models "github.com/vishenosik/CherryWatch/internal/services/models"
 	"github.com/vishenosik/CherryWatch/internal/store/sql/models"
@@ -19,70 +19,102 @@ type endpoints struct {
 }
 
 func newEndpoints(db *sqlx.DB) *endpoints {
-	return &endpoints{db: db}
+	return &endpoints{
+		db: db,
+	}
 }
 
 // CreateEndpoint inserts a new endpoint into the database
-func (s *endpoints) CreateEndpoints(ctx context.Context, edps srv_models.Endpoints) error {
-	return createEndpoints(ctx, s.db, models.FromServiceEndpoints(edps))
+func (s *endpoints) CreateEndpoints(ctx context.Context, edps srv_models.Endpoints) (srv_models.Endpoints, error) {
+	created, err := createEndpoints(ctx, s.db, models.FromServiceEndpoints(edps))
+	return models.ToServiceEndpoints(created), err
 }
 
 // CreateEndpoint inserts a new endpoint into the database
-func createEndpoints(ctx context.Context, db *sqlx.DB, edps *models.StoreEndpoints) error {
+func createEndpoints(ctx context.Context, db *sqlx.DB, edps models.Endpoints) (models.Endpoints, error) {
 
-	tx, err := db.Beginx()
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
+	const op = "createEndpoints"
 
-	if edps == nil || len(edps.Endpoints) == 0 {
-		return errors.New("endpoints can't be empty")
+	if len(edps) == 0 {
+		return nil, errors.Wrap(models.ErrNothingToCreate, op)
 	}
 
-	_, err = tx.NamedExecContext(ctx, `
+	// Prepare statements
+	insertEdps, err := db.PrepareNamed(`
 		INSERT INTO endpoints (id, service_name, url, interval)
-    	VALUES (:id, :service_name, :url, :interval)`,
-		edps.Endpoints,
+		VALUES (:id, :service_name, :url, :interval)`,
 	)
 	if err != nil {
-		var sqliteErr sqlite3.Error
-		if errors.As(err, &sqliteErr) && sqliteErr.ExtendedCode == sqlite3.ErrConstraintUnique {
-			return errors.Wrap(models.ErrAlreadyExists, "failed to insert endpoints")
+		return nil, err
+	}
+	defer insertEdps.Close()
+
+	insertSC, err := db.PrepareNamed(`
+		INSERT INTO endpoint_success_codes (endpoint_id, code) 
+		VALUES (:endpoint_id, :code)`,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer insertSC.Close()
+
+	insertNS, err := db.PrepareNamed(`
+		INSERT INTO endpoint_notification_services (endpoint_id, service_name)  
+		VALUES (:endpoint_id, :service_name)`,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer insertNS.Close()
+
+	runTx := func(edp *models.Endpoint) error {
+		tx, err := db.BeginTxx(ctx, &sql.TxOptions{})
+		if err != nil {
+			return errors.Wrap(err, "begin transaction fail")
 		}
-		return errors.Wrap(err, "failed to insert endpoints")
+		defer tx.Rollback()
+
+		if _, err := tx.NamedStmt(insertEdps).Exec(edp); err != nil {
+			return errors.Wrap(err, "insert endpoints fail")
+		}
+
+		for _, sc := range edp.SuccessCodes {
+			if sc != nil {
+				if _, err := tx.NamedStmt(insertSC).Exec(sc); err != nil {
+					return errors.Wrap(err, "insert success codes fail")
+				}
+			}
+		}
+		for _, ns := range edp.NotificationServices {
+			if ns != nil {
+				if _, err := tx.NamedStmt(insertNS).Exec(ns); err != nil {
+					return errors.Wrap(err, "insert notification services fail")
+				}
+			}
+		}
+		return tx.Commit()
 	}
 
-	// Batch insert success codes
-	if len(edps.SuccessCodes) != 0 {
-		_, err = tx.NamedExecContext(ctx, `
-			INSERT INTO endpoint_success_codes (endpoint_id, code) 
-			VALUES (:endpoint_id, :code)`,
-			edps.SuccessCodes,
-		)
+	created := make(models.Endpoints, 0, len(edps))
+	var errs *multierror.Error
+
+	for _, edp := range edps {
+		err := runTx(edp)
 		if err != nil {
-			return errors.Wrap(err, "failed to insert success codes")
+			errs = multierror.Append(errs, errors.Wrapf(err, "endpoint ID:%s", edp.ID))
+			continue
 		}
-	}
-	// Batch insert notification services
-	if len(edps.NotificationServices) != 0 {
-		_, err = tx.NamedExecContext(ctx, `
-	INSERT INTO endpoint_notification_services (endpoint_id, service_name)  
-	VALUES (:endpoint_id, :service_name)`,
-			edps.NotificationServices,
-		)
-		if err != nil {
-			return errors.Wrap(err, "failed to insert notification services")
-		}
+
+		created = append(created, edp)
 	}
 
-	return tx.Commit()
+	return created, errs.ErrorOrNil()
 }
 
 func (s *endpoints) GetEndpoints(ids ...string) (srv_models.Endpoints, error) {
 
 	var (
-		edps *models.StoreEndpoints
+		edps models.Endpoints
 		err  error
 	)
 
@@ -99,7 +131,7 @@ func (s *endpoints) GetEndpoints(ids ...string) (srv_models.Endpoints, error) {
 }
 
 // GetAllEndpoints retrieves all endpoints using a single query
-func getAllEndpoints(db *sqlx.DB) (*models.StoreEndpoints, error) {
+func getAllEndpoints(db *sqlx.DB) (models.Endpoints, error) {
 	// Enable WAL mode for better concurrent read performance
 	_, _ = db.Exec("PRAGMA journal_mode=WAL")
 
@@ -132,7 +164,7 @@ func getAllEndpoints(db *sqlx.DB) (*models.StoreEndpoints, error) {
 }
 
 // GetAllEndpoints retrieves endpoints with specified ids otherwise all endpoints retrieved
-func getEndpoints(db *sqlx.DB, ids ...string) (*models.StoreEndpoints, error) {
+func getEndpoints(db *sqlx.DB, ids ...string) (models.Endpoints, error) {
 
 	if len(ids) == 0 {
 		return nil, errors.New("nil ids")
@@ -174,7 +206,7 @@ func getEndpoints(db *sqlx.DB, ids ...string) (*models.StoreEndpoints, error) {
 	return handleRows(rows)
 }
 
-func handleRows(rows *sqlx.Rows) (*models.StoreEndpoints, error) {
+func handleRows(rows *sqlx.Rows) (models.Endpoints, error) {
 
 	type row struct {
 		models.Endpoint
@@ -182,21 +214,23 @@ func handleRows(rows *sqlx.Rows) (*models.StoreEndpoints, error) {
 		Services sql.NullString `db:"notification_services"`
 	}
 
-	endpoints := new(models.StoreEndpoints)
+	edps := make(models.Endpoints, 0)
 
 	for rows.Next() {
 
 		var r row
 		err := rows.StructScan(&r)
 		if err != nil {
-			return nil, fmt.Errorf("failed to scan endpoint: %v", err)
+			return nil, errors.Wrap(err, "failed to scan endpoint")
 		}
 
-		endpoints.Endpoints = append(endpoints.Endpoints, &r.Endpoint)
+		edp := &r.Endpoint
+		edp.SuccessCodes = make(models.SuccessCodes, 0)
+		edp.NotificationServices = make(models.NotificationServices, 0)
 
+		// Parse success codes
 		if r.Codes.Valid {
 
-			// Parse success codes
 			codes := strings.Split(r.Codes.String, ",")
 
 			for _, codeStr := range codes {
@@ -206,7 +240,7 @@ func handleRows(rows *sqlx.Rows) (*models.StoreEndpoints, error) {
 					continue
 				}
 
-				endpoints.SuccessCodes = append(endpoints.SuccessCodes, &models.SuccessCode{
+				edp.SuccessCodes = append(edp.SuccessCodes, &models.SuccessCode{
 					ID:   r.ID,
 					Code: code,
 				})
@@ -219,15 +253,16 @@ func handleRows(rows *sqlx.Rows) (*models.StoreEndpoints, error) {
 			srvs := strings.Split(r.Services.String, ",")
 
 			for _, srv := range srvs {
-				endpoints.NotificationServices = append(endpoints.NotificationServices, &models.NotificationService{
+				edp.NotificationServices = append(edp.NotificationServices, &models.NotificationService{
 					ID:          r.ID,
 					ServiceName: srv,
 				})
 			}
 		}
+		edps = append(edps, edp)
 	}
 
-	return endpoints, nil
+	return edps, nil
 }
 
 // // UpdateEndpoint modifies an existing endpoint

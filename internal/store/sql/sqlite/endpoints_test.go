@@ -2,6 +2,7 @@ package sqlite
 
 import (
 	"context"
+	"log"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -33,8 +34,9 @@ func Test_getAllEndpoints(t *testing.T) {
 		},
 	}
 
-	err := store.CreateEndpoints(context.Background(), edps)
+	created, err := store.CreateEndpoints(context.Background(), edps)
 	require.NoError(t, err)
+	require.Len(t, created, 3)
 
 	actual, err := store.GetEndpoints()
 	require.NoError(t, err)
@@ -52,4 +54,38 @@ func Test_getAllEndpoints(t *testing.T) {
 	assert.Equal(t, actual[0].URL, "urlurl")
 	assert.Equal(t, actual[0].ServiceName, "service1")
 	assert.Equal(t, actual[0].SuccessCodes, []int{200, 201})
+}
+
+func Test_createEndpoints(t *testing.T) {
+
+	store, cancel := suite(t)
+	defer cancel()
+
+	edps := srv_models.Endpoints{
+		{
+			ID:           "1",
+			ServiceName:  "service1",
+			URL:          "urlurl",
+			SuccessCodes: []int{200, 201},
+		},
+		{
+			ID:           "1",
+			ServiceName:  "service2",
+			SuccessCodes: []int{},
+		},
+		{
+			ID:           "1",
+			ServiceName:  "service3",
+			SuccessCodes: []int{204, 304},
+		},
+	}
+
+	created, err := store.CreateEndpoints(context.Background(), edps)
+	log.Println(created, err)
+	require.Error(t, err)
+	require.Len(t, created, 1)
+
+	actual, err := store.GetEndpoints()
+	require.NoError(t, err)
+	require.Len(t, actual, 1)
 }

@@ -7,10 +7,12 @@ import (
 )
 
 type Endpoint struct {
-	ID          string        `db:"id"`
-	ServiceName string        `db:"service_name"`
-	URL         string        `db:"url"`
-	Interval    time.Duration `db:"interval"`
+	ID                   string        `db:"id"`
+	ServiceName          string        `db:"service_name"`
+	URL                  string        `db:"url"`
+	Interval             time.Duration `db:"interval"`
+	SuccessCodes         SuccessCodes
+	NotificationServices NotificationServices
 }
 
 type Endpoints = []*Endpoint
@@ -29,117 +31,81 @@ type NotificationService struct {
 
 type NotificationServices = []*NotificationService
 
-type StoreEndpoints struct {
-	Endpoints            Endpoints
-	SuccessCodes         SuccessCodes
-	NotificationServices NotificationServices
-}
-
-func SuccessCodesBatch(edps srv_models.Endpoints) SuccessCodes {
-
-	successCodes := make(SuccessCodes, 0, len(edps))
-
-	for _, edp := range edps {
-		for _, sc := range edp.SuccessCodes {
-			successCodes = append(successCodes, &SuccessCode{
-				ID:   edp.ID,
-				Code: sc,
-			})
-		}
-	}
-
-	return successCodes
-}
-
-func NotificationServicesBatch(edps srv_models.Endpoints) NotificationServices {
-
-	successCodes := make(NotificationServices, 0, len(edps))
-
-	for _, edp := range edps {
-		for _, sc := range edp.NotificationServices {
-			successCodes = append(successCodes, &NotificationService{
-				ID:          edp.ID,
-				ServiceName: sc,
-			})
-		}
-	}
-
-	return successCodes
-}
-
 // Convert []*Endpoint to structured Endpoints model
-func FromServiceEndpoints(endpoints srv_models.Endpoints) *StoreEndpoints {
-	if len(endpoints) == 0 {
+func FromServiceEndpoints(edps srv_models.Endpoints) Endpoints {
+
+	if len(edps) == 0 {
 		return nil
 	}
 
-	infos := make(Endpoints, 0, len(endpoints))
-	successCodes := make(SuccessCodes, 0)
-	notificationServices := make(NotificationServices, 0)
+	converted := make(Endpoints, 0, len(edps))
 
-	for _, endpoint := range endpoints {
-		if endpoint == nil {
+	for _, edp := range edps {
+
+		if edp == nil {
 			continue
 		}
 
-		infos = append(infos, &Endpoint{
-			ID:          endpoint.ID,
-			ServiceName: endpoint.ServiceName,
-			URL:         endpoint.URL,
-			Interval:    endpoint.Interval,
-		})
+		successCodes := make(SuccessCodes, 0, len(edp.SuccessCodes))
 
-		for _, code := range endpoint.SuccessCodes {
+		for _, code := range edp.SuccessCodes {
 			successCodes = append(successCodes, &SuccessCode{
-				ID:   endpoint.ID,
+				ID:   edp.ID,
 				Code: code,
 			})
 		}
 
-		for _, service := range endpoint.NotificationServices {
+		notificationServices := make(NotificationServices, 0, len(edp.NotificationServices))
+		for _, service := range edp.NotificationServices {
 			notificationServices = append(notificationServices, &NotificationService{
-				ID:          endpoint.ID,
+				ID:          edp.ID,
 				ServiceName: service,
 			})
 		}
+
+		converted = append(converted, &Endpoint{
+			ID:                   edp.ID,
+			ServiceName:          edp.ServiceName,
+			URL:                  edp.URL,
+			Interval:             edp.Interval,
+			SuccessCodes:         successCodes,
+			NotificationServices: notificationServices,
+		})
+
 	}
 
-	return &StoreEndpoints{
-		Endpoints:            infos,
-		SuccessCodes:         successCodes,
-		NotificationServices: notificationServices,
-	}
+	return converted
 }
 
 // Convert structured Endpoints back to []*Endpoint
-func ToServiceEndpoints(structured *StoreEndpoints) srv_models.Endpoints {
-	if structured == nil || len(structured.Endpoints) == 0 {
+func ToServiceEndpoints(edps Endpoints) srv_models.Endpoints {
+
+	if len(edps) == 0 {
 		return nil
 	}
 
-	// Create a map for faster lookup of success codes and notification services
-	successCodesMap := make(map[string][]int)
-	for _, code := range structured.SuccessCodes {
-		successCodesMap[code.ID] = append(successCodesMap[code.ID], code.Code)
-	}
+	converted := make(srv_models.Endpoints, 0, len(edps))
+	for _, edp := range edps {
 
-	notificationServicesMap := make(map[string][]string)
-	for _, service := range structured.NotificationServices {
-		notificationServicesMap[service.ID] = append(notificationServicesMap[service.ID], service.ServiceName)
-	}
-
-	endpoints := make(srv_models.Endpoints, 0, len(structured.Endpoints))
-	for _, info := range structured.Endpoints {
-		endpoint := &srv_models.Endpoint{
-			ID:                   info.ID,
-			ServiceName:          info.ServiceName,
-			URL:                  info.URL,
-			Interval:             info.Interval,
-			SuccessCodes:         successCodesMap[info.ID],
-			NotificationServices: notificationServicesMap[info.ID],
+		srv := &srv_models.Endpoint{
+			ID:                   edp.ID,
+			ServiceName:          edp.ServiceName,
+			URL:                  edp.URL,
+			Interval:             edp.Interval,
+			SuccessCodes:         make([]int, 0, len(edp.SuccessCodes)),
+			NotificationServices: make([]string, 0, len(edp.NotificationServices)),
 		}
-		endpoints = append(endpoints, endpoint)
+
+		for _, code := range edp.SuccessCodes {
+			srv.SuccessCodes = append(srv.SuccessCodes, code.Code)
+		}
+
+		for _, service := range edp.NotificationServices {
+			srv.NotificationServices = append(srv.NotificationServices, service.ServiceName)
+		}
+
+		converted = append(converted, srv)
 	}
 
-	return endpoints
+	return converted
 }

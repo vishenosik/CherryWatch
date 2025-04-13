@@ -8,307 +8,310 @@ import (
 	srv_models "github.com/vishenosik/CherryWatch/internal/services/models"
 )
 
-func TestSuccessCodesBatch(t *testing.T) {
+func TestFromServiceEndpoints(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    srv_models.Endpoints
-		expected SuccessCodes
+		expected Endpoints
 	}{
+		{
+			name:     "nil input",
+			input:    nil,
+			expected: nil,
+		},
 		{
 			name:     "empty input",
 			input:    srv_models.Endpoints{},
-			expected: SuccessCodes{},
+			expected: nil,
 		},
 		{
-			name: "single endpoint with no success codes",
+			name: "single endpoint",
 			input: srv_models.Endpoints{
-				{
-					ID:           "1",
-					ServiceName:  "service1",
-					SuccessCodes: []int{},
+				&srv_models.Endpoint{
+					ID:                   "1",
+					ServiceName:          "test",
+					URL:                  "http://example.com",
+					Interval:             10 * time.Second,
+					SuccessCodes:         []int{200, 201},
+					NotificationServices: []string{"slack", "email"},
 				},
 			},
-			expected: SuccessCodes{},
-		},
-		{
-			name: "single endpoint with single success code",
-			input: srv_models.Endpoints{
-				{
-					ID:           "1",
-					ServiceName:  "service1",
-					SuccessCodes: []int{200},
+			expected: Endpoints{
+				&Endpoint{
+					ID:          "1",
+					ServiceName: "test",
+					URL:         "http://example.com",
+					Interval:    10 * time.Second,
+					SuccessCodes: SuccessCodes{
+						&SuccessCode{ID: "1", Code: 200},
+						&SuccessCode{ID: "1", Code: 201},
+					},
+					NotificationServices: NotificationServices{
+						&NotificationService{ID: "1", ServiceName: "slack"},
+						&NotificationService{ID: "1", ServiceName: "email"},
+					},
 				},
-			},
-			expected: SuccessCodes{
-				{ID: "1", Code: 200},
-			},
-		},
-		{
-			name: "single endpoint with multiple success codes",
-			input: srv_models.Endpoints{
-				{
-					ID:           "1",
-					ServiceName:  "service1",
-					SuccessCodes: []int{200, 201, 204},
-				},
-			},
-			expected: SuccessCodes{
-				{ID: "1", Code: 200},
-				{ID: "1", Code: 201},
-				{ID: "1", Code: 204},
 			},
 		},
 		{
-			name: "multiple models.Endpoints with success codes",
+			name: "multiple endpoints",
 			input: srv_models.Endpoints{
-				{
-					ID:           "1",
-					ServiceName:  "service1",
-					SuccessCodes: []int{200, 201},
+				&srv_models.Endpoint{
+					ID:                   "1",
+					ServiceName:          "service1",
+					URL:                  "http://service1.com",
+					Interval:             5 * time.Second,
+					SuccessCodes:         []int{200},
+					NotificationServices: []string{"slack"},
 				},
-				{
-					ID:           "2",
-					ServiceName:  "service2",
-					SuccessCodes: []int{204, 301},
+				&srv_models.Endpoint{
+					ID:                   "2",
+					ServiceName:          "service2",
+					URL:                  "http://service2.com",
+					Interval:             15 * time.Second,
+					SuccessCodes:         []int{200, 204},
+					NotificationServices: []string{"email"},
 				},
 			},
-			expected: SuccessCodes{
-				{ID: "1", Code: 200},
-				{ID: "1", Code: 201},
-				{ID: "2", Code: 204},
-				{ID: "2", Code: 301},
+			expected: Endpoints{
+				&Endpoint{
+					ID:          "1",
+					ServiceName: "service1",
+					URL:         "http://service1.com",
+					Interval:    5 * time.Second,
+					SuccessCodes: SuccessCodes{
+						&SuccessCode{ID: "1", Code: 200},
+					},
+					NotificationServices: NotificationServices{
+						&NotificationService{ID: "1", ServiceName: "slack"},
+					},
+				},
+				&Endpoint{
+					ID:          "2",
+					ServiceName: "service2",
+					URL:         "http://service2.com",
+					Interval:    15 * time.Second,
+					SuccessCodes: SuccessCodes{
+						&SuccessCode{ID: "2", Code: 200},
+						&SuccessCode{ID: "2", Code: 204},
+					},
+					NotificationServices: NotificationServices{
+						&NotificationService{ID: "2", ServiceName: "email"},
+					},
+				},
 			},
 		},
 		{
-			name: "mix of models.Endpoints with and without success codes",
+			name: "endpoint with nil slices",
 			input: srv_models.Endpoints{
-				{
-					ID:           "1",
-					ServiceName:  "service1",
-					SuccessCodes: []int{200},
-				},
-				{
-					ID:           "2",
-					ServiceName:  "service2",
-					SuccessCodes: []int{},
-				},
-				{
-					ID:           "3",
-					ServiceName:  "service3",
-					SuccessCodes: []int{204, 304},
+				&srv_models.Endpoint{
+					ID:          "1",
+					ServiceName: "test",
+					URL:         "http://example.com",
+					Interval:    10 * time.Second,
 				},
 			},
-			expected: SuccessCodes{
-				{ID: "1", Code: 200},
-				{ID: "3", Code: 204},
-				{ID: "3", Code: 304},
+			expected: Endpoints{
+				&Endpoint{
+					ID:                   "1",
+					ServiceName:          "test",
+					URL:                  "http://example.com",
+					Interval:             10 * time.Second,
+					SuccessCodes:         SuccessCodes{},
+					NotificationServices: NotificationServices{},
+				},
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := SuccessCodesBatch(tt.input)
+			result := FromServiceEndpoints(tt.input)
 			assert.Equal(t, tt.expected, result)
 		})
 	}
 }
 
-func BenchmarkSuccessCodesBatch(b *testing.B) {
-	benchmarks := []struct {
-		name  string
-		input srv_models.Endpoints
+func TestToServiceEndpoints(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    Endpoints
+		expected srv_models.Endpoints
 	}{
 		{
-			name:  "empty",
-			input: srv_models.Endpoints{},
+			name:     "nil input",
+			input:    nil,
+			expected: nil,
 		},
 		{
-			name: "small",
-			input: srv_models.Endpoints{
-				{
-					ID:           "1",
-					SuccessCodes: []int{200, 201},
+			name:     "empty input",
+			input:    Endpoints{},
+			expected: nil,
+		},
+		{
+			name: "single endpoint",
+			input: Endpoints{
+				&Endpoint{
+					ID:          "1",
+					ServiceName: "test",
+					URL:         "http://example.com",
+					Interval:    10 * time.Second,
+					SuccessCodes: SuccessCodes{
+						&SuccessCode{ID: "1", Code: 200},
+						&SuccessCode{ID: "1", Code: 201},
+					},
+					NotificationServices: NotificationServices{
+						&NotificationService{ID: "1", ServiceName: "slack"},
+						&NotificationService{ID: "1", ServiceName: "email"},
+					},
 				},
-				{
-					ID:           "2",
-					SuccessCodes: []int{204},
+			},
+			expected: srv_models.Endpoints{
+				&srv_models.Endpoint{
+					ID:                   "1",
+					ServiceName:          "test",
+					URL:                  "http://example.com",
+					Interval:             10 * time.Second,
+					SuccessCodes:         []int{200, 201},
+					NotificationServices: []string{"slack", "email"},
 				},
 			},
 		},
 		{
-			name:  "medium",
-			input: generateEndpoints(100, 5),
-		},
-		{
-			name:  "large",
-			input: generateEndpoints(1000, 10),
+			name: "endpoint with empty slices",
+			input: Endpoints{
+				&Endpoint{
+					ID:                   "1",
+					ServiceName:          "test",
+					URL:                  "http://example.com",
+					Interval:             10 * time.Second,
+					SuccessCodes:         SuccessCodes{},
+					NotificationServices: NotificationServices{},
+				},
+			},
+			expected: srv_models.Endpoints{
+				&srv_models.Endpoint{
+					ID:                   "1",
+					ServiceName:          "test",
+					URL:                  "http://example.com",
+					Interval:             10 * time.Second,
+					SuccessCodes:         []int{},
+					NotificationServices: []string{},
+				},
+			},
 		},
 	}
 
-	for _, bm := range benchmarks {
-		b.Run(bm.name, func(b *testing.B) {
-			for i := 0; i < b.N; i++ {
-				_ = SuccessCodesBatch(bm.input)
-			}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := ToServiceEndpoints(tt.input)
+			assert.Equal(t, tt.expected, result)
 		})
 	}
 }
 
-// generateEndpoints helper function to create test data
-func generateEndpoints(count, codesPerEndpoint int) srv_models.Endpoints {
+func TestRoundTripConversion(t *testing.T) {
+	original := srv_models.Endpoints{
+		&srv_models.Endpoint{
+			ID:                   "1",
+			ServiceName:          "test",
+			URL:                  "http://example.com",
+			Interval:             10 * time.Second,
+			SuccessCodes:         []int{200, 201},
+			NotificationServices: []string{"slack", "email"},
+		},
+		&srv_models.Endpoint{
+			ID:                   "2",
+			ServiceName:          "another",
+			URL:                  "http://another.com",
+			Interval:             5 * time.Second,
+			SuccessCodes:         []int{200},
+			NotificationServices: []string{"sms"},
+		},
+	}
+
+	// Convert to our model and back
+	converted := FromServiceEndpoints(original)
+	roundTrip := ToServiceEndpoints(converted)
+
+	assert.Equal(t, original, roundTrip)
+}
+
+func generateTestEndpoints(count int) srv_models.Endpoints {
 	endpoints := make(srv_models.Endpoints, count)
 	for i := 0; i < count; i++ {
-		codes := make([]int, codesPerEndpoint)
-		for j := 0; j < codesPerEndpoint; j++ {
-			codes[j] = 200 + j
-		}
 		endpoints[i] = &srv_models.Endpoint{
-			ID:           string(rune('a' + i%26)),
-			ServiceName:  "service",
-			SuccessCodes: codes,
+			ID:                   string(rune('a' + i)),
+			ServiceName:          "service-" + string(rune('a'+i)),
+			URL:                  "http://" + string(rune('a'+i)) + ".com",
+			Interval:             time.Duration(i+1) * time.Second,
+			SuccessCodes:         []int{200, 201, 204},
+			NotificationServices: []string{"slack", "email", "sms"},
 		}
 	}
 	return endpoints
 }
 
-// Unit tests
-func TestConverters(t *testing.T) {
-	t.Run("TestConvertSliceToStructuredEndpoints", func(t *testing.T) {
-		endpoints := srv_models.Endpoints{
-			{
-				ID:                   "123",
-				ServiceName:          "service1",
-				URL:                  "http://service1.com",
-				SuccessCodes:         []int{200, 201},
-				NotificationServices: []string{"slack", "email"},
-				Interval:             30 * time.Second,
-			},
-			{
-				ID:                   "456",
-				ServiceName:          "service2",
-				URL:                  "http://service2.com",
-				SuccessCodes:         []int{200, 204},
-				NotificationServices: []string{"pagerduty"},
-				Interval:             60 * time.Second,
-			},
-		}
+func BenchmarkFromServiceEndpoints(b *testing.B) {
+	testCases := []struct {
+		name  string
+		count int
+	}{
+		{"1 endpoint", 1},
+		{"10 endpoints", 10},
+		{"100 endpoints", 100},
+		{"1000 endpoints", 1000},
+	}
 
-		structured := FromServiceEndpoints(endpoints)
-
-		assert.NotNil(t, structured)
-		assert.Len(t, structured.Endpoints, 2)
-		assert.Len(t, structured.SuccessCodes, 4)
-		assert.Len(t, structured.NotificationServices, 3)
-
-		// Verify the first endpoint
-		assert.Equal(t, "123", structured.Endpoints[0].ID)
-		assert.Equal(t, "service1", structured.Endpoints[0].ServiceName)
-		assert.Equal(t, "http://service1.com", structured.Endpoints[0].URL)
-		assert.Equal(t, 30*time.Second, structured.Endpoints[0].Interval)
-
-		// Verify success codes for first endpoint
-		var codesForFirst []int
-		for _, code := range structured.SuccessCodes {
-			if code.ID == "123" {
-				codesForFirst = append(codesForFirst, code.Code)
+	for _, tc := range testCases {
+		endpoints := generateTestEndpoints(tc.count)
+		b.Run(tc.name, func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				_ = FromServiceEndpoints(endpoints)
 			}
-		}
-		assert.ElementsMatch(t, []int{200, 201}, codesForFirst)
+		})
+	}
+}
 
-		// Verify notification services for first endpoint
-		var servicesForFirst []string
-		for _, service := range structured.NotificationServices {
-			if service.ID == "123" {
-				servicesForFirst = append(servicesForFirst, service.ServiceName)
+func BenchmarkToServiceEndpoints(b *testing.B) {
+	testCases := []struct {
+		name  string
+		count int
+	}{
+		{"1 endpoint", 1},
+		{"10 endpoints", 10},
+		{"100 endpoints", 100},
+		{"1000 endpoints", 1000},
+	}
+
+	for _, tc := range testCases {
+		serviceEndpoints := generateTestEndpoints(tc.count)
+		endpoints := FromServiceEndpoints(serviceEndpoints)
+		b.Run(tc.name, func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				_ = ToServiceEndpoints(endpoints)
 			}
-		}
-		assert.ElementsMatch(t, []string{"slack", "email"}, servicesForFirst)
-	})
+		})
+	}
+}
 
-	t.Run("TestConvertSliceToStructuredEndpoints_EmptyInput", func(t *testing.T) {
-		structured := FromServiceEndpoints(nil)
-		assert.Nil(t, structured)
+func BenchmarkRoundTripConversion(b *testing.B) {
+	testCases := []struct {
+		name  string
+		count int
+	}{
+		{"1 endpoint", 1},
+		{"10 endpoints", 10},
+		{"100 endpoints", 100},
+	}
 
-		structured = FromServiceEndpoints(srv_models.Endpoints{})
-		assert.Nil(t, structured)
-	})
-
-	t.Run("TestConvertStructuredToSliceEndpoints", func(t *testing.T) {
-		structured := &StoreEndpoints{
-			Endpoints: []*Endpoint{
-				{
-					ID:          "123",
-					ServiceName: "service1",
-					URL:         "http://service1.com",
-					Interval:    30 * time.Second,
-				},
-				{
-					ID:          "456",
-					ServiceName: "service2",
-					URL:         "http://service2.com",
-					Interval:    60 * time.Second,
-				},
-			},
-			SuccessCodes: []*SuccessCode{
-				{ID: "123", Code: 200},
-				{ID: "123", Code: 201},
-				{ID: "456", Code: 200},
-				{ID: "456", Code: 204},
-			},
-			NotificationServices: []*NotificationService{
-				{ID: "123", ServiceName: "slack"},
-				{ID: "123", ServiceName: "email"},
-				{ID: "456", ServiceName: "pagerduty"},
-			},
-		}
-
-		endpoints := ToServiceEndpoints(structured)
-
-		assert.NotNil(t, endpoints)
-		assert.Len(t, endpoints, 2)
-
-		// Verify first endpoint
-		assert.Equal(t, "123", endpoints[0].ID)
-		assert.Equal(t, "service1", endpoints[0].ServiceName)
-		assert.Equal(t, "http://service1.com", endpoints[0].URL)
-		assert.Equal(t, 30*time.Second, endpoints[0].Interval)
-		assert.ElementsMatch(t, []int{200, 201}, endpoints[0].SuccessCodes)
-		assert.ElementsMatch(t, []string{"slack", "email"}, endpoints[0].NotificationServices)
-
-		// Verify second endpoint
-		assert.Equal(t, "456", endpoints[1].ID)
-		assert.Equal(t, "service2", endpoints[1].ServiceName)
-		assert.Equal(t, "http://service2.com", endpoints[1].URL)
-		assert.Equal(t, 60*time.Second, endpoints[1].Interval)
-		assert.ElementsMatch(t, []int{200, 204}, endpoints[1].SuccessCodes)
-		assert.ElementsMatch(t, []string{"pagerduty"}, endpoints[1].NotificationServices)
-	})
-
-	t.Run("TestConvertStructuredToSliceEndpoints_NilInput", func(t *testing.T) {
-		endpoints := ToServiceEndpoints(nil)
-		assert.Nil(t, endpoints)
-
-		endpoints = ToServiceEndpoints(&StoreEndpoints{Endpoints: []*Endpoint{}})
-		assert.Nil(t, endpoints)
-	})
-
-	t.Run("TestRoundTripConversion", func(t *testing.T) {
-		original := srv_models.Endpoints{
-			{
-				ID:                   "789",
-				ServiceName:          "service3",
-				URL:                  "http://service3.com",
-				SuccessCodes:         []int{200},
-				NotificationServices: []string{"sms"},
-				Interval:             15 * time.Second,
-			},
-		}
-
-		// Convert to structured and back
-		structured := FromServiceEndpoints(original)
-		convertedBack := ToServiceEndpoints(structured)
-
-		assert.Equal(t, original, convertedBack)
-	})
+	for _, tc := range testCases {
+		endpoints := generateTestEndpoints(tc.count)
+		b.Run(tc.name, func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				converted := FromServiceEndpoints(endpoints)
+				_ = ToServiceEndpoints(converted)
+			}
+		})
+	}
 }

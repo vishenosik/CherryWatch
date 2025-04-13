@@ -13,7 +13,7 @@ type EndpointsSaver interface {
 	CreateEndpoints(
 		ctx context.Context,
 		edps models.Endpoints,
-	) error
+	) (models.Endpoints, error)
 }
 
 type service struct {
@@ -56,10 +56,10 @@ func (srv *service) SaveEndpoints(
 	if len(filtered) == 0 {
 		return nil, models.ErrNothingToAdd
 	}
-
-	if err := srv.endpointsSaver.CreateEndpoints(ctx, filtered); err != nil {
+	created, err := srv.endpointsSaver.CreateEndpoints(ctx, filtered)
+	if err != nil {
 		return nil, err
 	}
 
-	return filtered, validationErrs.ErrorOrNil()
+	return created, validationErrs.ErrorOrNil()
 }
