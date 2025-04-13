@@ -12,7 +12,7 @@ import (
 type EndpointsSaver interface {
 	CreateEndpoints(
 		ctx context.Context,
-		edps models.Endpoints,
+		edps ...*models.Endpoint,
 	) (models.Endpoints, error)
 }
 
@@ -58,7 +58,7 @@ func (srv *service) SaveEndpoints(
 		return nil, models.ErrNothingToAdd
 	}
 
-	created, err := srv.endpointsSaver.CreateEndpoints(ctx, filtered)
+	created, err := srv.endpointsSaver.CreateEndpoints(ctx, filtered...)
 	if err != nil {
 		if storeErrs, ok := err.(*multierror.Error); ok {
 			errs = multierror.Append(errs, storeErrs)

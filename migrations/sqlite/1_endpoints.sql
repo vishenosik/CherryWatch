@@ -5,7 +5,9 @@ CREATE TABLE endpoints (
     id VARCHAR(36) PRIMARY KEY,
     service_name VARCHAR(64) NOT NULL,
     url TEXT NOT NULL,
-    interval INTEGER NOT NULL
+    interval INTEGER NOT NULL,
+    CONSTRAINT uk_endpoints_service_name UNIQUE (service_name),
+    CONSTRAINT uk_endpoints_url UNIQUE (url)
 );
 
 -- Table for success codes (many-to-one relationship with endpoints)

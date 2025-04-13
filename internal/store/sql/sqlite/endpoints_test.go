@@ -25,16 +25,18 @@ func Test_getAllEndpoints(t *testing.T) {
 		{
 			ID:           "2",
 			ServiceName:  "service2",
+			URL:          "urlurl2",
 			SuccessCodes: []int{},
 		},
 		{
 			ID:           "3",
 			ServiceName:  "service3",
+			URL:          "urlur3",
 			SuccessCodes: []int{204, 304},
 		},
 	}
 
-	created, err := store.CreateEndpoints(context.Background(), edps)
+	created, err := store.CreateEndpoints(context.Background(), edps...)
 	require.NoError(t, err)
 	require.Len(t, created, 3)
 
@@ -80,7 +82,7 @@ func Test_createEndpoints(t *testing.T) {
 		},
 	}
 
-	created, err := store.CreateEndpoints(context.Background(), edps)
+	created, err := store.CreateEndpoints(context.Background(), edps...)
 	log.Println(created, err)
 	require.Error(t, err)
 	require.Len(t, created, 1)

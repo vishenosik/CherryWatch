@@ -25,13 +25,13 @@ func newEndpoints(db *sqlx.DB) *endpoints {
 }
 
 // CreateEndpoint inserts a new endpoint into the database
-func (s *endpoints) CreateEndpoints(ctx context.Context, edps srv_models.Endpoints) (srv_models.Endpoints, error) {
-	created, err := createEndpoints(ctx, s.db, models.FromServiceEndpoints(edps))
+func (s *endpoints) CreateEndpoints(ctx context.Context, edps ...*srv_models.Endpoint) (srv_models.Endpoints, error) {
+	created, err := createEndpoints(ctx, s.db, models.FromServiceEndpoints(edps)...)
 	return models.ToServiceEndpoints(created), err
 }
 
 // CreateEndpoint inserts a new endpoint into the database
-func createEndpoints(ctx context.Context, db *sqlx.DB, edps models.Endpoints) (models.Endpoints, error) {
+func createEndpoints(ctx context.Context, db *sqlx.DB, edps ...*models.Endpoint) (models.Endpoints, error) {
 
 	// Prepare statements
 	insertEdps, err := db.PrepareNamed(`
@@ -68,7 +68,16 @@ func createEndpoints(ctx context.Context, db *sqlx.DB, edps models.Endpoints) (m
 		}
 		defer tx.Rollback()
 
+		uniqueMapper := map[string]string{
+			"endpoints.id":           fmt.Sprintf("id=%s", edp.ID),
+			"endpoints.service_name": fmt.Sprintf("service_name=%s", edp.ServiceName),
+			"endpoints.url":          fmt.Sprintf("url=%s", edp.URL),
+		}
+
 		if _, err := tx.NamedStmt(insertEdps).Exec(edp); err != nil {
+			if err := uniqueError(err, uniqueMapper); err != nil {
+				return err
+			}
 			return errors.Wrap(err, "insert endpoints fail")
 		}
 

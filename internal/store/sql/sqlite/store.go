@@ -3,12 +3,14 @@ package sqlite
 import (
 	"fmt"
 	"path"
+	"strings"
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/pkg/errors"
 	"github.com/pressly/goose/v3"
 	embed "github.com/vishenosik/CherryWatch"
+	"github.com/vishenosik/CherryWatch/internal/store/sql/models"
 )
 
 const (
@@ -65,4 +67,19 @@ func connect(storePath string) (*sqlx.DB, error) {
 	}
 
 	return db, nil
+}
+
+func uniqueError(err error, mapper map[string]string) error {
+
+	if !strings.Contains(err.Error(), "UNIQUE constraint failed") {
+		return nil
+	}
+
+	for fld := range mapper {
+		if strings.Contains(err.Error(), fld) {
+			return errors.Wrap(models.ErrAlreadyExists, mapper[fld])
+		}
+	}
+
+	return nil
 }
