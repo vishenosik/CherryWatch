@@ -49,7 +49,11 @@ func (p *Pool) Start(_ context.Context) {
 				},
 			)
 			if err != nil {
-				// TODO: handle this error.
+				if errors.Is(err, concurrency.ErrPoolClosed) {
+					// TODO: extra handling
+					// TODO: log error?
+					return
+				}
 			}
 		}
 	}()
