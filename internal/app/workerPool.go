@@ -14,7 +14,7 @@ type Pool struct {
 	subChan <-chan models.Task
 }
 
-func MustNewPool(subscriptions ...<-chan models.Task) *Pool {
+func MustNewPool(subscriptions ...chan models.Task) *Pool {
 	pool, err := NewPool(subscriptions...)
 	if err != nil {
 		panic(err)
@@ -22,8 +22,8 @@ func MustNewPool(subscriptions ...<-chan models.Task) *Pool {
 	return pool
 }
 
-func NewPool(subscriptions ...<-chan models.Task) (*Pool, error) {
-	return NewPoolContext(context.Background())
+func NewPool(subscriptions ...chan models.Task) (*Pool, error) {
+	return NewPoolContext(context.Background(), subscriptions...)
 }
 
 func NewPoolContext(ctx context.Context, subscriptions ...chan models.Task) (*Pool, error) {
@@ -60,6 +60,7 @@ func (p *Pool) Stop() {
 	p.pool.Stop()
 }
 
+// TODO: Change on "github.com/vishenosik/concurrency".MergeChannels function
 func merge[Type any](bufsize int, channels ...chan Type) <-chan Type {
 
 	res := make(chan Type, bufsize)

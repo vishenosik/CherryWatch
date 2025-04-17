@@ -40,7 +40,7 @@ func NewService(
 	}
 }
 
-func (srv *service) TasksChan() <-chan models.Task {
+func (srv *service) TasksChan() chan models.Task {
 	return srv.tasksCH
 }
 
