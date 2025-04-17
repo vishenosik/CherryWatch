@@ -19,6 +19,7 @@ type EndpointsSaver interface {
 type service struct {
 	endpointsSaver EndpointsSaver
 	tokenTTL       time.Duration
+	tasksCH        chan models.Task
 }
 
 type Config struct {
@@ -35,7 +36,12 @@ func NewService(
 	return &service{
 		tokenTTL:       config.TokenTTL,
 		endpointsSaver: endpointsSaver,
+		tasksCH:        make(chan models.Task, 1024),
 	}
+}
+
+func (srv *service) TasksChan() <-chan models.Task {
+	return srv.tasksCH
 }
 
 func (srv *service) SaveEndpoints(

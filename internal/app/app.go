@@ -17,6 +17,7 @@ import (
 type App struct {
 	log     *slog.Logger
 	servers []Server
+	pool    *Pool
 }
 
 type Server interface {
@@ -65,7 +66,11 @@ func NewApp() (*App, error) {
 		endpointsService,
 	)
 
-	return newApp(log, grpcServer, restServer), nil
+	app := newApp(log, grpcServer, restServer)
+
+	app.pool = MustNewPool(endpointsService.TasksChan())
+
+	return app, nil
 }
 
 func newApp(
@@ -85,6 +90,8 @@ func (app *App) MustRun() {
 	for _, server := range app.servers {
 		go server.MustRun()
 	}
+
+	app.pool.Start(context.TODO())
 }
 
 func (app *App) Stop(ctx context.Context) {
@@ -97,6 +104,8 @@ func (app *App) Stop(ctx context.Context) {
 	} else {
 		app.log.Info(msg)
 	}
+
+	app.pool.Stop()
 
 	for _, server := range app.servers {
 		server.Stop(ctx)
