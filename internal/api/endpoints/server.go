@@ -37,7 +37,6 @@ func NewAuthenticationServer(
 
 func (srv server) Routers() *chi.Mux {
 
-	// Creating a New Router
 	endpointsRouter := chi.NewMux()
 	endpointsRouter.Post("/", srv.saveEndpoint())
 
