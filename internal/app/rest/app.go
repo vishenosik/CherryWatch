@@ -15,6 +15,7 @@ import (
 	httpSwagger "github.com/swaggo/http-swagger/v2"
 
 	// _ "github.com/vishenosik/CherryWatch/internal/gen/swagger"
+	middlewarepkg "github.com/vishenosik/CherryWatch/pkg/middleware"
 	"github.com/vishenosik/web-tools/config"
 	middleW "github.com/vishenosik/web-tools/middleware"
 )
@@ -61,6 +62,7 @@ func newRestApp(
 
 	router := chi.NewRouter()
 	router.Use(
+		middlewarepkg.ApiVersionMiddleware(middlewarepkg.MustInitApiVersion("1.0")),
 		middleW.RequestLogger(log),
 	)
 
@@ -125,6 +127,6 @@ type Service interface {
 
 func setRouters(router *chi.Mux, services ...Service) {
 	for i := range services {
-		router.Mount("/", services[i].Routers())
+		router.Mount("/api", services[i].Routers())
 	}
 }

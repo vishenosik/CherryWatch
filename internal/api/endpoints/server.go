@@ -2,11 +2,11 @@ package endpoints
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/vishenosik/CherryWatch/internal/services/models"
-	"github.com/vishenosik/web-tools/api"
 )
 
 type Endpoints interface {
@@ -37,11 +37,12 @@ func NewAuthenticationServer(
 
 func (srv server) Routers() *chi.Mux {
 
-	endpointsRouter := chi.NewMux()
-	endpointsRouter.Post("/", srv.saveEndpoint())
-
 	router := chi.NewMux()
-	router.Mount(api.ApiV1("/endpoints"), endpointsRouter)
+	router.Post(mount("save"), srv.saveEndpoint())
 
 	return router
+}
+
+func mount(method string) string {
+	return fmt.Sprintf("/endpoints.%s", method)
 }

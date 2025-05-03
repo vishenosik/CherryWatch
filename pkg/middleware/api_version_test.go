@@ -2,18 +2,20 @@ package middleware
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func TestAPIVersion_ParseFirst(t *testing.T) {
+func TestAPIVersion_ParseRequest(t *testing.T) {
 	tests := []struct {
 		name        string
 		request     func() *http.Request
 		expectError bool
-		expected    APIVersion
+		expected    *Version
 	}{
 		{
 			name: "Valid query param",
@@ -21,7 +23,7 @@ func TestAPIVersion_ParseFirst(t *testing.T) {
 				req := httptest.NewRequest("GET", "/api?v=2.1", nil)
 				return req
 			},
-			expected: APIVersion{Major: 2, Minor: 1},
+			expected: &Version{Major: 2, Minor: 1},
 		},
 		{
 			name: "Valid header",
@@ -30,27 +32,12 @@ func TestAPIVersion_ParseFirst(t *testing.T) {
 				req.Header.Set(VersionHeader, "1.0")
 				return req
 			},
-			expected: APIVersion{Major: 1, Minor: 0},
-		},
-		{
-			name: "Default version",
-			request: func() *http.Request {
-				return httptest.NewRequest("GET", "/api", nil)
-			},
-			expected: APIVersion{Major: 2, Minor: 1},
+			expected: &Version{Major: 1, Minor: 0},
 		},
 		{
 			name: "Invalid format",
 			request: func() *http.Request {
 				req := httptest.NewRequest("GET", "/api?v=invalid", nil)
-				return req
-			},
-			expectError: true,
-		},
-		{
-			name: "Version too low",
-			request: func() *http.Request {
-				req := httptest.NewRequest("GET", "/api?v=0.9", nil)
 				return req
 			},
 			expectError: true,
@@ -67,30 +54,22 @@ func TestAPIVersion_ParseFirst(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var av APIVersion
-			err := av.ParseFirst(tt.request())
+			av, err := NewApiVersion("2.5")
+			assert.NoError(t, err)
 
+			err = av.ParseRequest(tt.request())
 			if tt.expectError {
-				if err == nil {
-					t.Error("Expected error but got none")
-				}
-				return
-			}
-
-			if err != nil {
-				t.Errorf("Unexpected error: %v", err)
-				return
-			}
-
-			if av != tt.expected {
-				t.Errorf("Expected %v, got %v", tt.expected, av)
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, tt.expected, av.Version)
 			}
 		})
 	}
 }
 
 func TestAPIVersion_WithContext(t *testing.T) {
-	av := APIVersion{Major: 1, Minor: 0}
+	av := &APIVersion{Version: &Version{Major: 1, Minor: 0}}
 	ctx := av.WithContext(context.Background())
 
 	retrieved, err := ApiVersionFromContext(ctx)
@@ -98,7 +77,7 @@ func TestAPIVersion_WithContext(t *testing.T) {
 		t.Fatalf("Failed to retrieve version from context: %v", err)
 	}
 
-	if *retrieved != av {
+	if retrieved != av.Version {
 		t.Errorf("Expected %v, got %v", av, *retrieved)
 	}
 }
@@ -153,7 +132,10 @@ func TestApiVersionMiddleware(t *testing.T) {
 			rr := httptest.NewRecorder()
 			handlerCalled := false
 
-			middleware := ApiVersionMiddleware(&APIVersion{})
+			apiv, err := NewApiVersion("2.1")
+			require.NoError(t, err)
+
+			middleware := ApiVersionMiddleware(apiv)
 			testHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				handlerCalled = true
 				_, err := ApiVersionFromContext(r.Context())
@@ -173,10 +155,6 @@ func TestApiVersionMiddleware(t *testing.T) {
 					t.Errorf("Expected status %d, got %d", tt.expectedStatus, rr.Code)
 				}
 
-				var errResp ErrorResponse
-				if err := json.NewDecoder(rr.Body).Decode(&errResp); err != nil {
-					t.Errorf("Failed to decode error response: %v", err)
-				}
 			} else {
 				if !handlerCalled {
 					t.Error("Handler was not called")
@@ -189,14 +167,14 @@ func TestApiVersionMiddleware(t *testing.T) {
 func TestParseVersion(t *testing.T) {
 	tests := []struct {
 		input    string
-		expected APIVersion
+		expected *Version
 		err      bool
 	}{
-		{"2.1", APIVersion{2, 1}, false},
-		{"1.0", APIVersion{1, 0}, false},
-		{"invalid", APIVersion{}, true},
-		{"1", APIVersion{}, true},
-		{"1.2.3", APIVersion{}, true},
+		{"2.1", &Version{2, 1}, false},
+		{"1.0", &Version{1, 0}, false},
+		{"invalid", &Version{}, true},
+		{"1", &Version{}, true},
+		{"1.2.3", &Version{}, true},
 	}
 
 	for _, tt := range tests {
@@ -214,32 +192,31 @@ func TestParseVersion(t *testing.T) {
 				return
 			}
 
-			if *result != tt.expected {
-				t.Errorf("Expected %v, got %v", tt.expected, *result)
-			}
+			require.Equal(t, tt.expected, result)
+
 		})
 	}
 }
 
-func TestCompareVersions(t *testing.T) {
+func Test_VersionGTE(t *testing.T) {
 	tests := []struct {
 		name     string
-		v1       *APIVersion
-		v2       *APIVersion
-		expected int
+		v1       *Version
+		v2       *Version
+		expected bool
 	}{
-		{"Equal", &APIVersion{1, 0}, &APIVersion{1, 0}, 0},
-		{"Major less", &APIVersion{1, 0}, &APIVersion{2, 0}, -1},
-		{"Major greater", &APIVersion{2, 0}, &APIVersion{1, 0}, 1},
-		{"Minor less", &APIVersion{1, 0}, &APIVersion{1, 1}, -1},
-		{"Minor greater", &APIVersion{1, 1}, &APIVersion{1, 0}, 1},
+		{"Equal", &Version{1, 0}, &Version{1, 0}, true},
+		{"Major less", &Version{1, 0}, &Version{2, 0}, false},
+		{"Major greater", &Version{2, 0}, &Version{1, 0}, true},
+		{"Minor less", &Version{1, 0}, &Version{1, 1}, false},
+		{"Minor greater", &Version{1, 1}, &Version{1, 0}, true},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := compareVersions(tt.v1, tt.v2)
+			result := tt.v1.GTE(tt.v2)
 			if result != tt.expected {
-				t.Errorf("Expected %d, got %d", tt.expected, result)
+				t.Errorf("Expected %v, got %v", tt.expected, result)
 			}
 		})
 	}
