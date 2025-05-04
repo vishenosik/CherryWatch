@@ -43,7 +43,7 @@ require (
 	github.com/swaggo/http-swagger/v2 v2.0.2 // indirect
 	github.com/swaggo/swag v1.16.4 // indirect
 	github.com/vishenosik/concurrency v0.0.2 // indirect
-	github.com/vishenosik/web-tools v0.0.1 // indirect
+	github.com/vishenosik/web-tools v0.0.2-0.20250504233446-9f7599d7d9ab // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.37.0 // indirect
 	golang.org/x/exp v0.0.0-20250408133849-7e4ce0ab07d0 // indirect

@@ -8,6 +8,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/vishenosik/web-tools/config"
+	dev "github.com/vishenosik/web-tools/log"
 	"google.golang.org/grpc"
 )
 
@@ -43,9 +44,7 @@ func NewGrpcApp(
 	// authService authentication.Authentication,
 ) *App {
 
-	Log := log.WithGroup(
-		"gRPC",
-	)
+	log = log.With(dev.AppComponent("gRPC"))
 
 	server := grpc.NewServer()
 
@@ -58,7 +57,7 @@ func NewGrpcApp(
 	// )
 
 	return &App{
-		log:    Log,
+		log:    log,
 		server: server,
 		port:   config.Server.Port,
 	}

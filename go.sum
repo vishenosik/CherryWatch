@@ -110,6 +110,8 @@ github.com/vishenosik/concurrency v0.0.2 h1:ypBwUWPNmYSRhUL/3P+sfMuz62GmjlLOlMwA
 github.com/vishenosik/concurrency v0.0.2/go.mod h1:NL7Ycl7yjdaPO7ZGkusPESzNr89ouDEjsWEUQLs+rMw=
 github.com/vishenosik/web-tools v0.0.1 h1:+1HYZz5POV+VnU3W/Ic+1KhuuEmBvJdUZCwVOCh6iRE=
 github.com/vishenosik/web-tools v0.0.1/go.mod h1:5rjy/0mH1a86Rlh9ytI6tyc3ogSNUSm+ReG54FBLAyY=
+github.com/vishenosik/web-tools v0.0.2-0.20250504233446-9f7599d7d9ab h1:RxWZrs3Z/kj9nxtnfH9UeGPX74iSlUt1752kLn1UwUw=
+github.com/vishenosik/web-tools v0.0.2-0.20250504233446-9f7599d7d9ab/go.mod h1:5rjy/0mH1a86Rlh9ytI6tyc3ogSNUSm+ReG54FBLAyY=
 go.uber.org/multierr v1.11.0 h1:blXXJkSxSSfBVBlC76pxqeO+LN3aDfLQo+309xJstO0=
 go.uber.org/multierr v1.11.0/go.mod h1:20+QtiLqy0Nd6FdQB9TLXag12DsQkrbs3htMFfDN80Y=
 golang.org/x/crypto v0.36.0 h1:AnAEvhDddvBdpY+uR+MyHmuZzzNqXSe/GvuDeob5L34=

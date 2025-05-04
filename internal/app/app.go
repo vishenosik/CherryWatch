@@ -99,7 +99,7 @@ func (app *App) Stop(ctx context.Context) {
 	const msg = "app stopping"
 
 	signal, ok := appctx.SignalCtx(ctx)
-	if !ok {
+	if ok {
 		app.log.Info(msg, slog.String("signal", signal.Signal.String()))
 	} else {
 		app.log.Info(msg)

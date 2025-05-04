@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"sync"
 
 	"github.com/pkg/errors"
 	"github.com/vishenosik/CherryWatch/internal/services/models"
@@ -32,7 +31,7 @@ func NewPoolContext(ctx context.Context, subscriptions ...chan models.Task) (*Po
 	}
 	return &Pool{
 		pool:    concurrency.NewWorkerPoolContext(ctx, concurrency.WithWorkersControl(3, 256, 3)),
-		subChan: merge(1024, subscriptions...),
+		subChan: concurrency.MergeChannels(ctx, uint16(1024), subscriptions...),
 	}, nil
 }
 
@@ -62,32 +61,4 @@ func (p *Pool) Start(_ context.Context) {
 
 func (p *Pool) Stop() {
 	p.pool.Stop()
-}
-
-// TODO: Change on "github.com/vishenosik/concurrency".MergeChannels function
-func merge[Type any](bufsize int, channels ...chan Type) <-chan Type {
-
-	res := make(chan Type, bufsize)
-	merger := func(ch chan Type) {
-		for val := range ch {
-			res <- val
-		}
-	}
-
-	wg := sync.WaitGroup{}
-	wg.Add(len(channels))
-
-	for _, ch := range channels {
-		go func() {
-			defer wg.Done()
-			merger(ch)
-		}()
-	}
-
-	go func() {
-		wg.Wait()
-		close(res)
-	}()
-
-	return res
 }
