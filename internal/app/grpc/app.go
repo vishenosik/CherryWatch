@@ -94,14 +94,14 @@ func (a *App) Run() error {
 		slog.Any("port", a.port),
 	)
 
-	log.Info("starting gRPC server")
+	log.Info("starting server")
 
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", a.port))
 	if err != nil {
 		return errors.Wrap(err, op)
 	}
 
-	log.Info("gRPC server is running", slog.String("addr", listener.Addr().String()))
+	log.Info("server is running")
 
 	if err := a.server.Serve(listener); err != nil {
 		return errors.Wrap(err, op)
@@ -121,7 +121,7 @@ func (a *App) Stop(_ context.Context) {
 	const op = "grpcApp.Stop"
 
 	a.log.With(slog.String("op", op)).
-		Info("stopping gRPC server", slog.Any("port", a.port))
+		Info("stopping server", slog.Any("port", a.port))
 
 	a.server.GracefulStop()
 

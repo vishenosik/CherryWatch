@@ -23,7 +23,7 @@ type endpointsAPI struct {
 
 type server = *endpointsAPI
 
-func NewAuthenticationServer(
+func NewHttpServer(
 	log *slog.Logger,
 	service Endpoints,
 ) *endpointsAPI {

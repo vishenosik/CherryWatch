@@ -2,6 +2,7 @@ package sqlite
 
 import (
 	"fmt"
+	"log/slog"
 	"path"
 	"strings"
 
@@ -22,7 +23,7 @@ type Store struct {
 	*endpoints
 }
 
-func MustInitSqlite(storePath string) *Store {
+func MustInitSqlite(storePath string, log *slog.Logger) *Store {
 	str, err := NewSqliteStore(storePath)
 	if err != nil {
 		panic(err)
@@ -55,6 +56,8 @@ func connect(storePath string) (*sqlx.DB, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to connect to sqlite")
 	}
+
+	goose.SetLogger(goose.NopLogger())
 
 	goose.SetBaseFS(embed.Migrations)
 

@@ -3,15 +3,25 @@ package app
 import (
 	"context"
 	"fmt"
+	"io"
 	"log/slog"
+	"os"
 
+	endpointsApi "github.com/vishenosik/CherryWatch/internal/api/endpoints"
 	grpcApp "github.com/vishenosik/CherryWatch/internal/app/grpc"
-	restApp "github.com/vishenosik/CherryWatch/internal/app/rest"
 	"github.com/vishenosik/CherryWatch/internal/services/endpoints"
 	"github.com/vishenosik/CherryWatch/internal/store/sql/sqlite"
 
 	appctx "github.com/vishenosik/CherryWatch/internal/app/context"
+	"github.com/vishenosik/web/colors"
 	"github.com/vishenosik/web/config"
+	logger "github.com/vishenosik/web/log"
+)
+
+const (
+	EnvDev  = "dev"
+	EnvProd = "prod"
+	EnvTest = "test"
 )
 
 type App struct {
@@ -35,14 +45,13 @@ func MustInitApp() *App {
 
 func NewApp() (*App, error) {
 
-	ctx := appctx.SetupAppCtx()
-	appContext := appctx.AppCtx(ctx)
+	conf := mustLoadEnvConfig()
+	log := setupLogger(conf.Env)
 
-	log := appContext.Logger
-	conf := appContext.Config
+	log.Debug("config loaded from env", slog.Any("config", conf))
 
 	// Stores init
-	sqliteStore := sqlite.MustInitSqlite(appContext.Config.StorePath)
+	sqliteStore := sqlite.MustInitSqlite(conf.StorePath, log)
 
 	endpointsService := endpoints.NewService(log, endpoints.Config{}, sqliteStore)
 
@@ -56,17 +65,12 @@ func NewApp() (*App, error) {
 		// authenticationService,
 	)
 
-	restServer := restApp.NewRestApp(
-		ctx,
-		restApp.Config{
-			Server: config.Server{
-				Port: conf.RestConfig.Port,
-			},
-		},
-		endpointsService,
+	httpServer := newHttpServer(
+		conf, log,
+		endpointsApi.NewHttpServer(log, endpointsService),
 	)
 
-	app := newApp(log, grpcServer, restServer)
+	app := newApp(log, grpcServer, httpServer)
 
 	app.pool = MustNewPool(endpointsService.TasksChan())
 
@@ -112,4 +116,40 @@ func (app *App) Stop(ctx context.Context) {
 	}
 
 	app.log.Info("app stopped")
+}
+
+func setupLogger(env string) *slog.Logger {
+	var handler slog.Handler
+	switch env {
+
+	case EnvProd:
+		handler = slog.NewJSONHandler(
+			os.Stdout,
+			&slog.HandlerOptions{Level: slog.LevelInfo},
+		)
+
+	case EnvTest:
+		handler = slog.NewJSONHandler(
+			io.Discard,
+			&slog.HandlerOptions{Level: slog.LevelInfo},
+		)
+
+	case EnvDev:
+		handler = logger.NewHandler(
+			logger.WithYamlMarshaller(),
+			logger.WithNumbersHighlight(colors.Blue),
+			logger.WithKeyWordsHighlight(map[string]colors.ColorCode{
+				logger.AttrError:     colors.Red,
+				logger.AttrOperation: colors.Green,
+			}),
+		)
+
+	default:
+		handler = slog.NewJSONHandler(
+			os.Stdout,
+			&slog.HandlerOptions{Level: slog.LevelDebug},
+		)
+
+	}
+	return slog.New(handler)
 }

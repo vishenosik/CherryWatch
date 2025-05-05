@@ -8,13 +8,13 @@ import (
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/vishenosik/CherryWatch/internal/api/models"
-	"github.com/vishenosik/CherryWatch/pkg/httpjson"
+	pkghttp "github.com/vishenosik/CherryWatch/pkg/http"
 )
 
 func (srv server) saveEndpoint() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		endpoints, err := httpjson.Decode[models.Endpoints](r)
+		endpoints, err := pkghttp.Decode[models.Endpoints](r)
 		if err != nil {
 			http.Error(w, "failed to decode request body", http.StatusBadRequest)
 			return

@@ -1,5 +1,5 @@
 // TODO: move to web
-package httpjson
+package http
 
 import (
 	"encoding/json"
