@@ -7,9 +7,9 @@ import (
 	"os"
 
 	"github.com/pkg/errors"
-	"github.com/vishenosik/web-tools/colors"
-	pkgctx "github.com/vishenosik/web-tools/context"
-	dev "github.com/vishenosik/web-tools/log"
+	"github.com/vishenosik/web/colors"
+	pkgctx "github.com/vishenosik/web/context"
+	logger "github.com/vishenosik/web/log"
 )
 
 const (
@@ -73,14 +73,12 @@ func setupLogger(env string) *slog.Logger {
 		)
 
 	case EnvDev:
-		handler = dev.NewHandler(
-			os.Stdout,
-			slog.LevelDebug,
-			dev.WithYamlMarshaller(),
-			dev.WithNumbersHighlight(colors.Blue),
-			dev.WithKeyWordsHighlight(map[string]colors.ColorCode{
-				dev.AttrError:     colors.Red,
-				dev.AttrOperation: colors.Green,
+		handler = logger.NewHandler(
+			logger.WithYamlMarshaller(),
+			logger.WithNumbersHighlight(colors.Blue),
+			logger.WithKeyWordsHighlight(map[string]colors.ColorCode{
+				logger.AttrError:     colors.Red,
+				logger.AttrOperation: colors.Green,
 			}),
 		)
 

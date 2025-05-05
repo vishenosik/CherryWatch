@@ -16,8 +16,8 @@ import (
 
 	// _ "github.com/vishenosik/CherryWatch/internal/gen/swagger"
 	middlewarepkg "github.com/vishenosik/CherryWatch/pkg/middleware"
-	"github.com/vishenosik/web-tools/config"
-	middleW "github.com/vishenosik/web-tools/middleware"
+	"github.com/vishenosik/web/config"
+	middleW "github.com/vishenosik/web/middleware"
 )
 
 type App struct {

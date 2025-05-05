@@ -11,8 +11,8 @@ import (
 	"github.com/pkg/errors"
 
 	// internal
-	"github.com/vishenosik/web-tools/collections"
-	"github.com/vishenosik/web-tools/env"
+	"github.com/vishenosik/web/collections"
+	"github.com/vishenosik/web/env"
 )
 
 var (

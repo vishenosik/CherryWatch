@@ -4,7 +4,7 @@ import (
 	"context"
 	"os"
 
-	pkgctx "github.com/vishenosik/web-tools/context"
+	pkgctx "github.com/vishenosik/web/context"
 )
 
 type signalContextKey struct{}

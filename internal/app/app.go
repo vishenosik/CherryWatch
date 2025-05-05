@@ -11,7 +11,7 @@ import (
 	"github.com/vishenosik/CherryWatch/internal/store/sql/sqlite"
 
 	appctx "github.com/vishenosik/CherryWatch/internal/app/context"
-	"github.com/vishenosik/web-tools/config"
+	"github.com/vishenosik/web/config"
 )
 
 type App struct {

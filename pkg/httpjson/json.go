@@ -1,4 +1,4 @@
-// TODO: move to web-tools
+// TODO: move to web
 package httpjson
 
 import (
