@@ -3,7 +3,6 @@ package endpoints
 import (
 	"context"
 	"fmt"
-	"log/slog"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/vishenosik/CherryWatch/internal/services/models"
@@ -17,19 +16,16 @@ type Endpoints interface {
 }
 
 type endpointsAPI struct {
-	log     *slog.Logger
 	service Endpoints
 }
 
 type server = *endpointsAPI
 
 func NewHttpServer(
-	log *slog.Logger,
 	service Endpoints,
 ) *endpointsAPI {
 
 	return &endpointsAPI{
-		log:     log,
 		service: service,
 	}
 

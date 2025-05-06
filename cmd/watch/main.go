@@ -13,7 +13,7 @@ import (
 	appctx "github.com/vishenosik/CherryWatch/internal/app/context"
 )
 
-// @title           sso
+// @title           CherryWatch
 // @version         0.0.1
 // @description     This is a sample server celler server.
 // @termsOfService  http://swagger.io/terms/
@@ -34,16 +34,12 @@ import (
 // @externalDocs.url          https://swagger.io/resources/open-api/
 func main() {
 	flag.Parse()
-	runServer()
-}
 
-func runServer() {
-
-	drawLogo()
+	logo()
 
 	ctx := context.Background()
 
-	// Инициализация приложения
+	// App init
 	application := app.MustInitApp()
 
 	application.MustRun()
@@ -58,7 +54,7 @@ func runServer() {
 	application.Stop(stopctx)
 }
 
-func drawLogo() {
+func logo() {
 	fmt.Print(`   
                                   +######-                         
                                 -         .##+.   -                
@@ -96,5 +92,5 @@ func drawLogo() {
  | |___|  _  | |___|  _ <|  _ < | |    \ V  V / ___ \| || |___|  _  |
   \____|_| |_|_____|_| \_\_| \_\|_|     \_/\_/_/   \_\_| \____|_| |_|
                                                                      
-    `)
+`)
 }

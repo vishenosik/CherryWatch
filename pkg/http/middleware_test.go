@@ -1,11 +1,10 @@
-package middleware
+package http
 
 import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"github.com/stretchr/testify/require"
 	"github.com/vishenosik/CherryWatch/pkg/versions"
 )
 
@@ -40,13 +39,10 @@ func TestApiVersionMiddleware(t *testing.T) {
 			rr := httptest.NewRecorder()
 			handlerCalled := false
 
-			apiv, err := versions.NewApiVersion("2.1")
-			require.NoError(t, err)
-
-			middleware := ApiVersionMiddleware(apiv)
+			middleware := ApiVersionMiddleware(versions.DoubleVersion{}, "2.1")
 			testHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				handlerCalled = true
-				_, err := versions.ApiVersionFromContext(r.Context())
+				_, err := ApiVersionFromContext(r.Context())
 				if err != nil {
 					t.Errorf("Failed to get version from context: %v", err)
 				}

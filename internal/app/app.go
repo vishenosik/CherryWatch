@@ -67,12 +67,12 @@ func NewApp() (*App, error) {
 
 	httpServer := newHttpServer(
 		conf, log,
-		endpointsApi.NewHttpServer(log, endpointsService),
+		endpointsApi.NewHttpServer(endpointsService),
 	)
 
 	app := newApp(log, grpcServer, httpServer)
 
-	app.pool = MustNewPool(endpointsService.TasksChan())
+	app.pool = MustInitPool(endpointsService.TasksChan())
 
 	return app, nil
 }

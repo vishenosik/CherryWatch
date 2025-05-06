@@ -101,12 +101,11 @@ func (a *App) Run() error {
 		return errors.Wrap(err, op)
 	}
 
-	log.Info("server is running")
-
 	if err := a.server.Serve(listener); err != nil {
 		return errors.Wrap(err, op)
 	}
 
+	log.Info("server is running")
 	return nil
 }
 

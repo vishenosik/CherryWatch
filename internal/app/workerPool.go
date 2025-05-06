@@ -13,7 +13,7 @@ type Pool struct {
 	subChan <-chan models.Task
 }
 
-func MustNewPool(subscriptions ...chan models.Task) *Pool {
+func MustInitPool(subscriptions ...chan models.Task) *Pool {
 	pool, err := NewPool(subscriptions...)
 	if err != nil {
 		panic(err)

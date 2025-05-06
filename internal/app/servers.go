@@ -14,7 +14,7 @@ import (
 	// internal
 
 	"github.com/vishenosik/CherryWatch/pkg/http"
-	middlewarepkg "github.com/vishenosik/CherryWatch/pkg/http/middleware"
+
 	"github.com/vishenosik/CherryWatch/pkg/versions"
 	// _ "github.com/vishenosik/CherryWatch/internal/gen/swagger"
 )
@@ -27,8 +27,8 @@ func newHttpServer(conf Config, log *slog.Logger, services ...Service) Server {
 
 	router := chi.NewRouter()
 	router.Use(
-		middlewarepkg.ApiVersionMiddleware(versions.MustInitApiVersion("1.0")),
 		middleW.RequestLogger(log),
+		http.ApiVersionMiddleware(versions.DoubleVersion{}, "1.0"),
 	)
 
 	router.Get("/swagger/*", httpSwagger.Handler())
