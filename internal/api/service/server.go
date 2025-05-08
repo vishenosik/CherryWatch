@@ -1,9 +1,8 @@
 package service
 
 import (
-	"fmt"
-
 	"github.com/go-chi/chi/v5"
+	http_pkg "github.com/vishenosik/CherryWatch/pkg/http"
 )
 
 type serviceAPI struct {
@@ -11,16 +10,17 @@ type serviceAPI struct {
 
 type server = *serviceAPI
 
+var mount = http_pkg.MethodFunc("service")
+
 func NewHttpServer() *serviceAPI {
-
 	return &serviceAPI{}
-
 }
 
 func (srv server) Routers(r chi.Router) {
-	r.Get(mount("ping"), srv.ping())
-}
-
-func mount(method string) string {
-	return fmt.Sprintf("/service.%s", method)
+	r.Get(mount("ping"), http_pkg.VersionedHandler(
+		http_pkg.VersionedHandlersMap{
+			"1.0": srv.ping_1_0(),
+			"1.1": srv.ping_1_1(),
+		},
+	))
 }

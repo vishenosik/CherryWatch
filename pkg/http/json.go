@@ -3,6 +3,7 @@ package http
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/pkg/errors"
@@ -20,4 +21,10 @@ func Decode[Type any](r *http.Request) (Type, error) {
 		return elem, err
 	}
 	return elem, nil
+}
+
+func MethodFunc(prefix string) func(string) string {
+	return func(method string) string {
+		return fmt.Sprintf("/%s.%s", prefix, method)
+	}
 }

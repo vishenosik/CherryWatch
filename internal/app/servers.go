@@ -9,7 +9,6 @@ import (
 	httpSwagger "github.com/swaggo/http-swagger/v2"
 	"github.com/vishenosik/web/config"
 	logger "github.com/vishenosik/web/log"
-	middleW "github.com/vishenosik/web/middleware"
 
 	// internal
 
@@ -25,9 +24,11 @@ type Service interface {
 
 func newHttpServer(conf Config, log *slog.Logger, services ...Service) Server {
 
+	log_ := log.With(logger.AppComponent("http"))
+
 	router := chi.NewRouter()
 	router.Use(
-		middleW.RequestLogger(log),
+		http.RequestLogger(log_),
 		http.ApiVersionMiddleware(versions.DoubleVersion{}, "2.0"),
 	)
 
@@ -46,7 +47,7 @@ func newHttpServer(conf Config, log *slog.Logger, services ...Service) Server {
 				Port: conf.RestConfig.Port,
 			},
 		},
-		log.With(logger.AppComponent("http")),
+		log_,
 		router,
 	)
 }

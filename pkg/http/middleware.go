@@ -7,6 +7,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/vishenosik/CherryWatch/pkg/models"
+	"github.com/vishenosik/CherryWatch/pkg/versions"
 )
 
 const (
@@ -77,6 +78,10 @@ func (av *APIVersion) ParseRequest(r *http.Request) error {
 		versionStr = r.Header.Get(VersionHeader)
 	}
 
+	if versionStr == "" {
+		return errors.New("api version is not provided")
+	}
+
 	version, err := av.Version.Parse_(versionStr)
 	if err != nil {
 		return errors.Wrap(err, "invalid version format")
@@ -128,5 +133,25 @@ func ApiVersionMiddleware(
 			ctx := context.WithValue(r.Context(), apiVersionKey{}, av.Version)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
+	}
+}
+
+type VersionedHandlersMap = map[string]http.HandlerFunc
+
+func VersionedHandler(handlers VersionedHandlersMap) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		apiVersion, err := ApiVersionFromContext[versions.DoubleVersion](r.Context())
+		if err != nil {
+			SendErrors(w, http.StatusBadRequest, err.Error())
+			return
+		}
+
+		handler, ok := handlers[apiVersion.String()]
+		if !ok || handler == nil {
+			SendErrors(w, http.StatusNotImplemented, "api version unsupported")
+			return
+		}
+
+		handler(w, r)
 	}
 }

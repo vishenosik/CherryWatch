@@ -3,41 +3,43 @@ package service
 import (
 	"encoding/json"
 	"net/http"
-
-	http_pkg "github.com/vishenosik/CherryWatch/pkg/http"
-	"github.com/vishenosik/CherryWatch/pkg/versions"
 )
 
-func (srv server) ping() http.HandlerFunc {
+type response struct {
+	ApiVersion string `json:"api_version"`
+	Status     string `json:"status"`
+}
+
+func (srv server) ping_1_0() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		apiVersion, err := http_pkg.ApiVersionFromContext[versions.DoubleVersion](r.Context())
-		if err != nil {
-			http_pkg.SendErrors(w, http.StatusBadRequest, err.Error())
-		}
-
-		type response struct {
-			ApiVersion string `json:"api_version"`
-			Status     string `json:"status"`
-		}
-
 		w.Header().Set("Content-Type", "application/json")
-		resps := response{ApiVersion: apiVersion.String()}
 
-		switch apiVersion.String() {
-		case "1.0":
-			resps.Status = "ok buddy"
-		case "1.1":
-			resps.Status = "ok maam"
-		default:
-			http_pkg.SendErrors(w, http.StatusBadRequest, "version unsupported")
-			return
+		response := response{
+			ApiVersion: "1.0",
+			Status:     "ok buddy",
 		}
 
-		if err := json.NewEncoder(w).Encode(resps); err != nil {
+		if err := json.NewEncoder(w).Encode(response); err != nil {
 			http.Error(w, "failed to encode response", http.StatusInternalServerError)
 			return
 		}
+	}
+}
 
+func (srv server) ping_1_1() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		w.Header().Set("Content-Type", "application/json")
+
+		response := response{
+			ApiVersion: "1.1",
+			Status:     "ok just ok",
+		}
+
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			http.Error(w, "failed to encode response", http.StatusInternalServerError)
+			return
+		}
 	}
 }
