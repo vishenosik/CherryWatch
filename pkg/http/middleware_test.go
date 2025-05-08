@@ -42,7 +42,7 @@ func TestApiVersionMiddleware(t *testing.T) {
 			middleware := ApiVersionMiddleware(versions.DoubleVersion{}, "2.1")
 			testHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				handlerCalled = true
-				_, err := ApiVersionFromContext(r.Context())
+				_, err := ApiVersionFromContext[versions.DoubleVersion](r.Context())
 				if err != nil {
 					t.Errorf("Failed to get version from context: %v", err)
 				}

@@ -96,15 +96,16 @@ func (av *APIVersion) WithContext(ctx context.Context) context.Context {
 }
 
 // ApiVersionFromContext retrieves the APIVersion from context
-func ApiVersionFromContext(ctx context.Context) (models.Version, error) {
+func ApiVersionFromContext[VersionType models.Version](ctx context.Context) (VersionType, error) {
+	var empty VersionType
 	val := ctx.Value(apiVersionKey{})
 	if val == nil {
-		return nil, errors.New("no API version in context")
+		return empty, errors.New("no API version in context")
 	}
 
-	version, ok := val.(models.Version)
+	version, ok := val.(VersionType)
 	if !ok {
-		return nil, errors.New("invalid API version type in context")
+		return empty, errors.New("invalid API version type in context")
 	}
 	return version, nil
 }

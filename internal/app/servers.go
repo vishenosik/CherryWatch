@@ -20,7 +20,7 @@ import (
 )
 
 type Service interface {
-	Routers() *chi.Mux
+	Routers(r chi.Router)
 }
 
 func newHttpServer(conf Config, log *slog.Logger, services ...Service) Server {
@@ -28,14 +28,17 @@ func newHttpServer(conf Config, log *slog.Logger, services ...Service) Server {
 	router := chi.NewRouter()
 	router.Use(
 		middleW.RequestLogger(log),
-		http.ApiVersionMiddleware(versions.DoubleVersion{}, "1.0"),
+		http.ApiVersionMiddleware(versions.DoubleVersion{}, "2.0"),
 	)
 
 	router.Get("/swagger/*", httpSwagger.Handler())
 
-	for i := range services {
-		router.Mount("/api", services[i].Routers())
-	}
+	router.Route("/api", func(r chi.Router) {
+		for i := range services {
+			services[i].Routers(r)
+		}
+	},
+	)
 
 	return http.NewHttpApp(
 		http.Config{

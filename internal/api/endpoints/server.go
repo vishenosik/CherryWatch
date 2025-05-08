@@ -31,12 +31,8 @@ func NewHttpServer(
 
 }
 
-func (srv server) Routers() *chi.Mux {
-
-	router := chi.NewMux()
-	router.Post(mount("save"), srv.saveEndpoint())
-
-	return router
+func (srv server) Routers(r chi.Router) {
+	r.Post(mount("save"), srv.saveEndpoint())
 }
 
 func mount(method string) string {

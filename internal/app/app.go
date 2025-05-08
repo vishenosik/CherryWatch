@@ -8,6 +8,7 @@ import (
 	"os"
 
 	endpointsApi "github.com/vishenosik/CherryWatch/internal/api/endpoints"
+	"github.com/vishenosik/CherryWatch/internal/api/service"
 	grpcApp "github.com/vishenosik/CherryWatch/internal/app/grpc"
 	"github.com/vishenosik/CherryWatch/internal/services/endpoints"
 	"github.com/vishenosik/CherryWatch/internal/store/sql/sqlite"
@@ -68,6 +69,7 @@ func NewApp() (*App, error) {
 	httpServer := newHttpServer(
 		conf, log,
 		endpointsApi.NewHttpServer(endpointsService),
+		service.NewHttpServer(),
 	)
 
 	app := newApp(log, grpcServer, httpServer)
