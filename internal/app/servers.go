@@ -38,8 +38,7 @@ func newHttpServer(conf Config, log *slog.Logger, services ...Service) Server {
 		for i := range services {
 			services[i].Routers(r)
 		}
-	},
-	)
+	})
 
 	return http.NewHttpApp(
 		http.Config{

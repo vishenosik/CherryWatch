@@ -6,7 +6,6 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/go-chi/chi/v5"
 	"github.com/pkg/errors"
 
 	"github.com/vishenosik/web/config"
@@ -23,8 +22,8 @@ type Config struct {
 	Server config.Server
 }
 
-func NewHttpApp(config Config, logger *slog.Logger, mux *chi.Mux) *Server {
-	return NewHttpAppContext(context.Background(), config, logger, mux)
+func NewHttpApp(config Config, logger *slog.Logger, handler http.Handler) *Server {
+	return NewHttpAppContext(context.Background(), config, logger, handler)
 }
 
 func NewHttpAppContext(
@@ -44,7 +43,7 @@ func NewHttpAppContext(
 	}
 
 	if handler == nil {
-		panic("router can't be nil")
+		panic("handler can't be nil")
 	}
 
 	return &Server{
@@ -89,8 +88,4 @@ func (a *Server) Stop(ctx context.Context) {
 	if err := a.server.Shutdown(ctx); err != nil {
 		a.log.Error("server shutdown failed", logger.Error(err))
 	}
-}
-
-type Service interface {
-	Routers() *chi.Mux
 }
