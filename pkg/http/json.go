@@ -9,6 +9,10 @@ import (
 	"github.com/pkg/errors"
 )
 
+const (
+	BlankRoute = "/"
+)
+
 func Decode[Type any](r *http.Request) (Type, error) {
 	var elem Type
 	if r == nil {

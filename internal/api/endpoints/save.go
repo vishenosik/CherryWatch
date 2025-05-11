@@ -11,7 +11,7 @@ import (
 	pkghttp "github.com/vishenosik/CherryWatch/pkg/http"
 )
 
-func (srv server) saveEndpoint() http.HandlerFunc {
+func (srv server) save_1_0() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		endpoints, err := pkghttp.Decode[models.Endpoints](r)
@@ -34,7 +34,7 @@ func (srv server) saveEndpoint() http.HandlerFunc {
 			} else {
 				switch err {
 				default:
-					http.Error(w, "Internal server error", http.StatusInternalServerError)
+					http.Error(w, "Internal server error"+err.Error(), http.StatusInternalServerError)
 				}
 				return
 			}
@@ -48,7 +48,7 @@ func (srv server) saveEndpoint() http.HandlerFunc {
 		}
 
 		response := struct {
-			AddedEndpoints models.Endpoints `json:"added_endpoints"`
+			AddedEndpoints models.Endpoints `json:"added_endpoints,omitempty"`
 			Errors         []string         `json:"errors,omitempty"`
 		}{
 			AddedEndpoints: models.FromServiceEndpoints(added),

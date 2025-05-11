@@ -34,28 +34,17 @@ func (v DoubleVersion) In(v1, v2 DoubleVersion) bool {
 	}
 
 	if lower.Major == upper.Major && lower.Minor == upper.Minor {
-		fmt.Println("eq")
 		if v.Major != upper.Major && v.Minor != upper.Minor {
 			return false
-		} else {
-			return true
 		}
-	} else {
-		fmt.Println("neq", v.Major < lower.Major, v.Major > upper.Major, v.Major < lower.Major || v.Major > upper.Major)
-		switch {
-		case v.Major < lower.Major || v.Major > upper.Major:
-			fmt.Println("case 1")
-			return false
-		case v.Major == lower.Major && v.Minor < lower.Minor:
-			fmt.Println("case 2")
-			return false
-		case v.Major == upper.Major && v.Minor > upper.Minor:
-			fmt.Println("case 3")
-			return false
-		default:
-			return true
-		}
+		return true
+	} else if (v.Major < lower.Major || v.Major > upper.Major) ||
+		(v.Major == lower.Major && v.Minor < lower.Minor) ||
+		(v.Major == upper.Major && v.Minor > upper.Minor) {
+		return false
+
 	}
+	return true
 }
 
 func (v DoubleVersion) In_(v1, v2 models.Version) bool {
