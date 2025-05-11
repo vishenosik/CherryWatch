@@ -5,8 +5,8 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/hashicorp/go-multierror"
 	"github.com/vishenosik/CherryWatch/internal/services/models"
+	"github.com/vishenosik/CherryWatch/pkg/multierr"
 )
 
 type EndpointsSaver interface {
@@ -49,29 +49,21 @@ func (srv *service) SaveEndpoints(
 	endpoints models.Endpoints,
 ) (added models.Endpoints, err error) {
 
-	var errs *multierror.Error
+	errs := new(multierr.Error)
 
 	filtered, err := models.FilterValidEndpoints(endpoints)
 	if err != nil {
-		if validErrs, ok := err.(*multierror.Error); ok {
-			errs = multierror.Append(errs, validErrs.Errors...)
-		} else {
-			errs = multierror.Append(errs, err)
-		}
+		errs.Append(err)
 	}
 
 	if len(filtered) == 0 {
-		errs = multierror.Append(errs, models.ErrNothingToAdd)
+		errs.Append(models.ErrNothingToAdd)
 		return nil, errs.ErrorOrNil()
 	}
 
 	created, err := srv.endpointsSaver.CreateEndpoints(ctx, filtered...)
 	if err != nil {
-		if storeErrs, ok := err.(*multierror.Error); ok {
-			errs = multierror.Append(errs, storeErrs.Errors...)
-		} else {
-			errs = multierror.Append(errs, err)
-		}
+		errs.Append(err)
 	}
 
 	return created, errs.ErrorOrNil()

@@ -7,11 +7,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/hashicorp/go-multierror"
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
 	srv_models "github.com/vishenosik/CherryWatch/internal/services/models"
 	"github.com/vishenosik/CherryWatch/internal/store/sql/models"
+	"github.com/vishenosik/CherryWatch/pkg/multierr"
 )
 
 type endpoints struct {
@@ -69,9 +69,9 @@ func createEndpoints(ctx context.Context, db *sqlx.DB, edps ...*models.Endpoint)
 		defer tx.Rollback()
 
 		uniqueMapper := map[string]string{
-			"endpoints.id":           fmt.Sprintf("id=%s", edp.ID),
-			"endpoints.service_name": fmt.Sprintf("service_name=%s", edp.ServiceName),
-			"endpoints.url":          fmt.Sprintf("url=%s", edp.URL),
+			"endpoints.id":           fmt.Sprintf("endpoint with id=%s", edp.ID),
+			"endpoints.service_name": fmt.Sprintf("endpoint with service_name=%s", edp.ServiceName),
+			"endpoints.url":          fmt.Sprintf("endpoint with url=%s", edp.URL),
 		}
 
 		if _, err := tx.NamedStmt(insertEdps).Exec(edp); err != nil {
@@ -88,6 +88,7 @@ func createEndpoints(ctx context.Context, db *sqlx.DB, edps ...*models.Endpoint)
 				}
 			}
 		}
+
 		for _, ns := range edp.NotificationServices {
 			if ns != nil {
 				if _, err := tx.NamedStmt(insertNS).Exec(ns); err != nil {
@@ -95,16 +96,17 @@ func createEndpoints(ctx context.Context, db *sqlx.DB, edps ...*models.Endpoint)
 				}
 			}
 		}
+
 		return tx.Commit()
 	}
 
 	created := make(models.Endpoints, 0, len(edps))
-	var errs *multierror.Error
+	errs := new(multierr.Error)
 
 	for _, edp := range edps {
 		err := runTx(edp)
 		if err != nil {
-			errs = multierror.Append(errs, errors.Wrapf(err, "endpoint ID:%s", edp.ID))
+			errs.Append(err)
 			continue
 		}
 

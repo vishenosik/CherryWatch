@@ -3,12 +3,11 @@ package endpoints
 import (
 	"context"
 	"encoding/json"
-	"log"
 	"net/http"
 
-	"github.com/hashicorp/go-multierror"
 	"github.com/vishenosik/CherryWatch/internal/api/models"
 	pkghttp "github.com/vishenosik/CherryWatch/pkg/http"
+	"github.com/vishenosik/CherryWatch/pkg/multierr"
 )
 
 func (srv server) save_1_0() http.HandlerFunc {
@@ -16,35 +15,18 @@ func (srv server) save_1_0() http.HandlerFunc {
 
 		endpoints, err := pkghttp.Decode[models.Endpoints](r)
 		if err != nil {
-			http.Error(w, "failed to decode request body", http.StatusBadRequest)
+			pkghttp.SendErrors(w, http.StatusBadRequest, "failed to decode request body")
 			return
 		}
 
 		ctx, cancel := context.WithCancel(r.Context())
 		defer cancel()
 
-		var multiErr *multierror.Error
+		errs := new(multierr.Error)
 
 		added, err := srv.service.SaveEndpoints(ctx, models.ToServiceEndpoints(endpoints))
 		if err != nil {
-			errs, ok := err.(*multierror.Error)
-			if ok {
-				multiErr = errs
-				log.Println(ok, multiErr == nil, multiErr.Errors)
-			} else {
-				switch err {
-				default:
-					http.Error(w, "Internal server error"+err.Error(), http.StatusInternalServerError)
-				}
-				return
-			}
-		}
-		var errors []string
-
-		if multiErr != nil {
-			for _, err := range multiErr.Errors {
-				errors = append(errors, err.Error())
-			}
+			errs.Append(err)
 		}
 
 		response := struct {
@@ -52,7 +34,7 @@ func (srv server) save_1_0() http.HandlerFunc {
 			Errors         []string         `json:"errors,omitempty"`
 		}{
 			AddedEndpoints: models.FromServiceEndpoints(added),
-			Errors:         errors,
+			Errors:         errs.List(),
 		}
 
 		w.Header().Set("Content-Type", "application/json")

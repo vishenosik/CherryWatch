@@ -3,7 +3,8 @@ package models
 import (
 	"time"
 
-	"github.com/hashicorp/go-multierror"
+	"github.com/vishenosik/CherryWatch/pkg/multierr"
+
 	"github.com/pkg/errors"
 
 	"github.com/go-playground/validator/v10"
@@ -41,30 +42,31 @@ type Endpoints = []*Endpoint
 
 func (edp *Endpoint) Validate() error {
 
-	var errs *multierror.Error
+	errs := new(multierr.Error)
 
 	if edp.ID == "" {
-		errs = multierror.Append(errs, ErrID)
+		errs.Append(ErrID)
 	}
 
 	if edp.Interval < time.Minute {
-		errs = multierror.Append(errs, ErrInterval)
+		errs.Append(ErrInterval)
 	}
 
 	for _, code := range edp.SuccessCodes {
 		if code <= 0 || code >= 600 {
-			errs = multierror.Append(errs, errors.Wrapf(ErrCode, "code %d", code))
+			errs.AppendWrapf(ErrCode, "code %d", code)
+			break
 		}
 	}
 
 	valid := validator.New()
 
 	if err := valid.Var(edp.URL, "url"); err != nil {
-		errs = multierror.Append(errs, ErrURL)
+		errs.Append(ErrURL)
 	}
 
 	if err := valid.Var(edp.ServiceName, "ascii"); err != nil {
-		errs = multierror.Append(errs, ErrAscii)
+		errs.Append(ErrAscii)
 	}
 
 	return errs.ErrorOrNil()
@@ -78,23 +80,16 @@ func FilterValidEndpoints(endpoints Endpoints) (Endpoints, error) {
 		return nil, errors.Wrap(ErrNothingToAdd, "endpoints")
 	}
 
-	var errs *multierror.Error
+	errs := new(multierr.Error)
 	validEndpoints := make(Endpoints, 0, len(endpoints))
 
 	for _, endpoint := range endpoints {
 		err := endpoint.Validate()
 		if err != nil {
-			if ValidationErrs, ok := err.(*multierror.Error); ok {
-				for _, _err := range ValidationErrs.Errors {
-					errs = multierror.Append(errs, errors.Wrap(_err, endpoint.ServiceName))
-				}
-			} else {
-				errs = multierror.Append(errs, errors.Wrap(err, endpoint.ServiceName))
-			}
+			errs.AppendWrap(err, endpoint.ServiceName)
 			continue
 		}
 		validEndpoints = append(validEndpoints, endpoint)
-
 	}
 
 	return validEndpoints, errs.ErrorOrNil()
