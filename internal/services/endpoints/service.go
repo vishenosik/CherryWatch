@@ -54,22 +54,23 @@ func (srv *service) SaveEndpoints(
 	filtered, err := models.FilterValidEndpoints(endpoints)
 	if err != nil {
 		if validErrs, ok := err.(*multierror.Error); ok {
-			errs = multierror.Append(errs, validErrs)
+			errs = multierror.Append(errs, validErrs.Errors...)
 		} else {
-			return nil, err
+			errs = multierror.Append(errs, err)
 		}
 	}
 
 	if len(filtered) == 0 {
-		return nil, models.ErrNothingToAdd
+		errs = multierror.Append(errs, models.ErrNothingToAdd)
+		return nil, errs.ErrorOrNil()
 	}
 
 	created, err := srv.endpointsSaver.CreateEndpoints(ctx, filtered...)
 	if err != nil {
 		if storeErrs, ok := err.(*multierror.Error); ok {
-			errs = multierror.Append(errs, storeErrs)
+			errs = multierror.Append(errs, storeErrs.Errors...)
 		} else {
-			return nil, err
+			errs = multierror.Append(errs, err)
 		}
 	}
 

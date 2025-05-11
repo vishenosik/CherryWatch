@@ -12,11 +12,11 @@ type ErrorResponse struct {
 }
 
 // sendError sends a JSON error response
-func SendErrors(w http.ResponseWriter, statusCode int, messages ...string) {
+func SendErrors(w http.ResponseWriter, statusCode int, errors ...string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
 	_ = json.NewEncoder(w).Encode(ErrorResponse{
 		Message: http.StatusText(statusCode),
-		Errors:  messages,
+		Errors:  errors,
 	})
 }
