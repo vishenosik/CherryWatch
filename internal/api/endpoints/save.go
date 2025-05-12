@@ -10,12 +10,22 @@ import (
 	"github.com/vishenosik/CherryWatch/pkg/multierr"
 )
 
+type SaveResponse struct {
+	AddedEndpoints models.Endpoints `json:"added_endpoints,omitempty"`
+	pkghttp.ErrorResponse
+}
+
 func (srv server) save_1_0() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		endpoints, err := pkghttp.Decode[models.Endpoints](r)
 		if err != nil {
 			pkghttp.SendErrors(w, http.StatusBadRequest, "failed to decode request body")
+			return
+		}
+
+		if len(endpoints) == 0 {
+			pkghttp.SendErrors(w, http.StatusNoContent, "nothing to add`")
 			return
 		}
 
@@ -29,18 +39,29 @@ func (srv server) save_1_0() http.HandlerFunc {
 			errs.Append(err)
 		}
 
-		response := struct {
-			AddedEndpoints models.Endpoints `json:"added_endpoints,omitempty"`
-			Errors         []string         `json:"errors,omitempty"`
-		}{
-			AddedEndpoints: models.FromServiceEndpoints(added),
-			Errors:         errs.List(),
-		}
+		// Prepare response
 
 		w.Header().Set("Content-Type", "application/json")
 
+		response := SaveResponse{
+			AddedEndpoints: models.FromServiceEndpoints(added),
+		}
+
+		writeErrorResponse := func(statusCode int) {
+			w.WriteHeader(statusCode)
+			response.ErrorResponse = pkghttp.NewErrorResponse(statusCode, errs.List()...)
+		}
+
+		switch {
+		case errs.ErrorOrNil() != nil && len(response.AddedEndpoints) != 0:
+			writeErrorResponse(http.StatusPartialContent)
+
+		case errs.ErrorOrNil() != nil && len(response.AddedEndpoints) == 0:
+			writeErrorResponse(http.StatusNotAcceptable)
+		}
+
 		if err := json.NewEncoder(w).Encode(response); err != nil {
-			http.Error(w, "failed to encode response", http.StatusInternalServerError)
+			pkghttp.SendErrors(w, http.StatusInternalServerError, "failed to encode response")
 			return
 		}
 	}

@@ -10,19 +10,6 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-var (
-	// ID can't be empty
-	ErrID = errors.New("ID can't be empty")
-	// provided string is not URL
-	ErrURL = errors.New("provided string is not URL")
-	// time interval can't be less than time.Minute
-	ErrInterval = errors.New("time interval can't be less than time.Minute")
-	// string must consist of only ascii characters
-	ErrAscii = errors.New("string must consist of only ascii characters")
-	// must be in (0,600) interval
-	ErrCode = errors.New("must be in (0,600) interval")
-)
-
 type Endpoint struct {
 	// Endpoint identifier (uuid4 only)
 	ID string
@@ -43,6 +30,21 @@ type Endpoints = []*Endpoint
 func (edp *Endpoint) Validate() error {
 
 	errs := new(multierr.Error)
+	valid := validator.New()
+
+	if edp.ServiceName == "" {
+		errs.Append(errors.Wrap(ErrRequired, "service name"))
+		return errs.ErrorOrNil()
+	}
+
+	if err := valid.Var(edp.ServiceName, "ascii"); err != nil {
+		errs.Append(errors.Wrap(ErrAscii, "service name"))
+		return errs.ErrorOrNil()
+	}
+
+	if err := valid.Var(edp.URL, "url"); err != nil {
+		errs.Append(ErrURL)
+	}
 
 	if edp.ID == "" {
 		errs.Append(ErrID)
@@ -57,16 +59,6 @@ func (edp *Endpoint) Validate() error {
 			errs.AppendWrapf(ErrCode, "code %d", code)
 			break
 		}
-	}
-
-	valid := validator.New()
-
-	if err := valid.Var(edp.URL, "url"); err != nil {
-		errs.Append(ErrURL)
-	}
-
-	if err := valid.Var(edp.ServiceName, "ascii"); err != nil {
-		errs.Append(ErrAscii)
 	}
 
 	return errs.ErrorOrNil()
@@ -86,7 +78,7 @@ func FilterValidEndpoints(endpoints Endpoints) (Endpoints, error) {
 	for _, endpoint := range endpoints {
 		err := endpoint.Validate()
 		if err != nil {
-			errs.AppendWrap(err, endpoint.ServiceName)
+			errs.AppendWrapf(err, "name=%s url=%s", endpoint.ServiceName, endpoint.URL)
 			continue
 		}
 		validEndpoints = append(validEndpoints, endpoint)

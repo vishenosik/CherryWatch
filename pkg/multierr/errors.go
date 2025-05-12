@@ -6,18 +6,26 @@ import (
 )
 
 type Error struct {
-	*multierror.Error
+	Err *multierror.Error
+}
+
+func (er *Error) ErrorOrNil() error {
+	return er.Err.ErrorOrNil()
+}
+
+func (er *Error) Error() string {
+	return er.Err.GoString()
 }
 
 func (er *Error) List() []string {
 
-	if er.Error == nil {
+	if er.Err == nil {
 		return nil
 	}
 
 	var errors []string
 
-	for _, err := range er.Error.Errors {
+	for _, err := range er.Err.Errors {
 		errors = append(errors, err.Error())
 	}
 	return errors
@@ -31,12 +39,12 @@ func (er *Error) Append(err error) {
 
 	errs, ok := err.(*multierror.Error)
 	if !ok {
-		er.Error = multierror.Append(er.Error, err)
+		er.Err = multierror.Append(er.Err, err)
 		return
 	}
 
 	for _, _err := range errs.Errors {
-		er.Error = multierror.Append(er.Error, _err)
+		er.Err = multierror.Append(er.Err, _err)
 	}
 }
 
@@ -48,12 +56,12 @@ func (er *Error) AppendWrap(err error, message string) {
 
 	errs, ok := err.(*multierror.Error)
 	if !ok {
-		er.Error = multierror.Append(er.Error, errors.Wrap(err, message))
+		er.Err = multierror.Append(er.Err, errors.Wrap(err, message))
 		return
 	}
 
 	for _, _err := range errs.Errors {
-		er.Error = multierror.Append(er.Error, errors.Wrap(_err, message))
+		er.Err = multierror.Append(er.Err, errors.Wrap(_err, message))
 	}
 }
 
@@ -64,11 +72,11 @@ func (er *Error) AppendWrapf(err error, format string, args ...any) {
 
 	errs, ok := err.(*multierror.Error)
 	if !ok {
-		er.Error = multierror.Append(er.Error, errors.Wrapf(err, format, args...))
+		er.Err = multierror.Append(er.Err, errors.Wrapf(err, format, args...))
 		return
 	}
 
 	for _, _err := range errs.Errors {
-		er.Error = multierror.Append(er.Error, errors.Wrapf(_err, format, args...))
+		er.Err = multierror.Append(er.Err, errors.Wrapf(_err, format, args...))
 	}
 }
