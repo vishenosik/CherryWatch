@@ -41,8 +41,6 @@ func (srv server) save_1_0() http.HandlerFunc {
 
 		// Prepare response
 
-		w.Header().Set("Content-Type", "application/json")
-
 		response := SaveResponse{
 			AddedEndpoints: models.FromServiceEndpoints(added),
 		}

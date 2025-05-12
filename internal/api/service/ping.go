@@ -13,8 +13,6 @@ type response struct {
 func (srv server) ping_1_0() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		w.Header().Set("Content-Type", "application/json")
-
 		response := response{
 			ApiVersion: "1.0",
 			Status:     "ok buddy",
@@ -29,8 +27,6 @@ func (srv server) ping_1_0() http.HandlerFunc {
 
 func (srv server) ping_1_1() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-
-		w.Header().Set("Content-Type", "application/json")
 
 		response := response{
 			ApiVersion: "1.1",
