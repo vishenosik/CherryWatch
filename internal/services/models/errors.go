@@ -3,8 +3,8 @@ package models
 import "github.com/pkg/errors"
 
 var (
-	// nothing to add
-	ErrNothingToAdd = errors.New("nothing to add")
+	// no content added
+	ErrContentNotAdded = errors.New("content is not added")
 )
 
 // validation errors

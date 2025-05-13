@@ -69,7 +69,7 @@ func (edp *Endpoint) Validate() error {
 func FilterValidEndpoints(endpoints Endpoints) (Endpoints, error) {
 
 	if len(endpoints) == 0 {
-		return nil, errors.Wrap(ErrNothingToAdd, "endpoints")
+		return nil, errors.Wrap(ErrContentNotAdded, "endpoints")
 	}
 
 	errs := new(multierr.Error)

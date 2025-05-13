@@ -3,9 +3,11 @@ package endpoints
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	"github.com/vishenosik/CherryWatch/internal/api/models"
+	srvmodels "github.com/vishenosik/CherryWatch/internal/services/models"
 	pkghttp "github.com/vishenosik/CherryWatch/pkg/http"
 	"github.com/vishenosik/CherryWatch/pkg/multierr"
 )
@@ -50,12 +52,11 @@ func (srv server) save_1_0() http.HandlerFunc {
 			response.ErrorResponse = pkghttp.NewErrorResponse(statusCode, errs.List()...)
 		}
 
-		switch {
-		case errs.ErrorOrNil() != nil && len(response.AddedEndpoints) != 0:
+		if err := errs.ErrorOrNil(); err != nil {
+			if errors.Is(err, srvmodels.ErrContentNotAdded) {
+				writeErrorResponse(http.StatusNotAcceptable)
+			}
 			writeErrorResponse(http.StatusPartialContent)
-
-		case errs.ErrorOrNil() != nil && len(response.AddedEndpoints) == 0:
-			writeErrorResponse(http.StatusNotAcceptable)
 		}
 
 		if err := json.NewEncoder(w).Encode(response); err != nil {

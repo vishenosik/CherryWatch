@@ -57,13 +57,18 @@ func (srv *service) SaveEndpoints(
 	}
 
 	if len(filtered) == 0 {
-		errs.Append(models.ErrNothingToAdd)
+		errs.Append(models.ErrContentNotAdded)
 		return nil, errs.ErrorOrNil()
 	}
 
 	created, err := srv.endpointsSaver.CreateEndpoints(ctx, filtered...)
 	if err != nil {
 		errs.Append(err)
+	}
+
+	if len(created) == 0 {
+		errs.Append(models.ErrContentNotAdded)
+		return nil, errs.ErrorOrNil()
 	}
 
 	return created, errs.ErrorOrNil()

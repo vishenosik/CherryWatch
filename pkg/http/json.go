@@ -15,8 +15,8 @@ const (
 
 func Decode[Type any](r *http.Request) (Type, error) {
 	var elem Type
-	if r == nil {
-		return elem, errors.New("nil request")
+	if r == nil || r.Body == nil {
+		return elem, errors.New("nil request or request body")
 	}
 	if err := json.NewDecoder(r.Body).Decode(&elem); err != nil {
 		return elem, err
