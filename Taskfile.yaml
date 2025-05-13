@@ -16,6 +16,15 @@ tasks:
     desc: Run main application
     cmd: go run ./cmd/watch
 
+  build-local:
+    desc: Builds application
+    cmds:
+      - 'go build -o bin/ ./cmd/watch/main.go'
+    sources:
+      - ./*.go,
+      - ./**/*.go
+
+
   # TESTING
 
   mock:
@@ -53,3 +62,15 @@ tasks:
     desc: Generate hmac_secret_file used to configure dgraph secrets so far
     aliases: [gen-hmac]
     cmd: tr -dc 'a-zA-Z0-9' < /dev/urandom | dd bs=1 count=32 of=./deploy/compose/dgraph/acl/hmac_secret
+  
+  # TOOLS
+
+  dev:
+    desc: Build and start app with file listener (hot reload)
+    deps: [build-local]
+    silent: true
+    watch: true
+    cmd: ./bin/main
+    sources: 
+      - ./*.go,
+      - ./**/*.go

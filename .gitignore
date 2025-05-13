@@ -1,34 +1,62 @@
-# If you prefer the allow list template instead of the deny list, see community template:
-# https://github.com/github/gitignore/blob/main/community/Golang/Go.AllowList.gitignore
-#
-# Binaries for programs and plugins
+# COMMON
+# binaries for programs and plugins
 *.exe
 *.exe~
 *.dll
 *.so
 *.dylib
+bin/*
 
-# Test binary, built with `go test -c`
+# test binary, built with `go test -c`
 *.test
 
-# Output of the go coverage tool, specifically when used with LiteIDE
+# environment
+.env
+
+# output of the go coverage tool, specifically when used with LiteIDE
 *.out
 
-# Dependency directories (remove the comment below to include it)
-# vendor/
+# output of the web benchmarking tool
+*.pdf
 
-# Go workspace file
+# go workspace file
 go.work
 go.work.sum
 
-# env file
-.env
+# IDE SETTINGS
+# Visual Studio
+.vs
+# Visual StudioCode
+.vscode
+!tools/debug/.vscode/
+# JetBrains
+.idea
 
+# TASKFILE SETTINGS
+# checksums
+.task/
+
+# OBSIDIAN SETTINGS
+# to exclude Obsidian's settings (including plugin and hotkey configurations)
+.obsidian/
+# to only exclude plugin configuration. Might be useful to prevent some plugin from exposing sensitive data
+.obsidian/plugins
+# OR only to exclude workspace cache
+.obsidian/workspace.json
+# to exclude workspace cache specific to mobile devices
+.obsidian/workspace-mobile.json
+# Add below lines to exclude OS settings and caches
+.trash/
+.DS_Store
+
+# any data storage
 **/data/**
 **/files
 **/storage
-# 
+
+# logs 
 *.log
 log/
 
+# gitkeep to keep some directories with ignored contents
 !**/.gitkeep
