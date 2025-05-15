@@ -4,7 +4,7 @@ import (
 	"context"
 	"os"
 
-	pkgctx "github.com/vishenosik/web/context"
+	pkgctx "github.com/vishenosik/CherryWatch/pkg/context"
 )
 
 type signalContextKey struct{}

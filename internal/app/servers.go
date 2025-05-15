@@ -7,8 +7,8 @@ import (
 	// pkg
 	"github.com/go-chi/chi/v5"
 	httpSwagger "github.com/swaggo/http-swagger/v2"
-	"github.com/vishenosik/web/config"
-	logger "github.com/vishenosik/web/log"
+	"github.com/vishenosik/CherryWatch/pkg/config"
+	logger "github.com/vishenosik/CherryWatch/pkg/log"
 
 	// internal
 

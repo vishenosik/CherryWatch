@@ -8,8 +8,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/vishenosik/web/config"
-	logger "github.com/vishenosik/web/log"
+	"github.com/vishenosik/CherryWatch/pkg/config"
+	logger "github.com/vishenosik/CherryWatch/pkg/log"
 )
 
 type Server struct {

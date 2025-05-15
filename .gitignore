@@ -56,7 +56,6 @@ go.work.sum
 
 # logs 
 *.log
-log/
 
 # gitkeep to keep some directories with ignored contents
 !**/.gitkeep

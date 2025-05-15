@@ -27,7 +27,7 @@ func (srv server) save_1_0() http.HandlerFunc {
 		}
 
 		if len(endpoints) == 0 {
-			pkghttp.SendErrors(w, http.StatusNoContent, "nothing to add`")
+			pkghttp.SendErrors(w, http.StatusNoContent, "nothing to add")
 			return
 		}
 
@@ -49,15 +49,20 @@ func (srv server) save_1_0() http.HandlerFunc {
 
 		writeErrorResponse := func(statusCode int) {
 			w.WriteHeader(statusCode)
-			response.ErrorResponse = pkghttp.NewErrorResponse(statusCode, errs.List()...)
+			response.ErrorResponse = pkghttp.NewErrorResponse(statusCode, errs.CriticalString(), errs.List()...)
 		}
 
-		if err := errs.ErrorOrNil(); err != nil {
-			if errors.Is(err, srvmodels.ErrContentNotAdded) {
-				writeErrorResponse(http.StatusNotAcceptable)
+		handleErr := func(err error) {
+			if err != nil {
+				if errors.Is(err, srvmodels.ErrContentNotAdded) {
+					writeErrorResponse(http.StatusNotAcceptable)
+					return
+				}
+				writeErrorResponse(http.StatusPartialContent)
 			}
-			writeErrorResponse(http.StatusPartialContent)
 		}
+
+		handleErr(errs.ErrorOrNil())
 
 		if err := json.NewEncoder(w).Encode(response); err != nil {
 			pkghttp.SendErrors(w, http.StatusInternalServerError, "failed to encode response")

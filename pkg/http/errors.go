@@ -7,20 +7,22 @@ import (
 
 // ErrorResponse represents an http API error
 type ErrorResponse struct {
-	Message string   `json:"message,omitempty"`
-	Errors  []string `json:"errors,omitempty"`
+	Message  string   `json:"message,omitempty"`
+	Critical string   `json:"critical,omitempty"`
+	Errors   []string `json:"errors,omitempty"`
 }
 
-func NewErrorResponse(statusCode int, errors ...string) ErrorResponse {
+func NewErrorResponse(statusCode int, critical string, errors ...string) ErrorResponse {
 	return ErrorResponse{
-		Message: http.StatusText(statusCode),
-		Errors:  errors,
+		Message:  http.StatusText(statusCode),
+		Critical: critical,
+		Errors:   errors,
 	}
 }
 
 // sendError sends a JSON error response
-func SendErrors(w http.ResponseWriter, statusCode int, errors ...string) {
+func SendErrors(w http.ResponseWriter, statusCode int, critical string, errors ...string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
-	_ = json.NewEncoder(w).Encode(NewErrorResponse(statusCode, errors...))
+	_ = json.NewEncoder(w).Encode(NewErrorResponse(statusCode, critical, errors...))
 }

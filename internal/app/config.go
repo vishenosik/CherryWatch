@@ -2,17 +2,20 @@ package app
 
 import (
 	// std
+
 	"flag"
 	"log"
 	"os"
 
 	// pkg
+	"github.com/ilyakaznacheev/cleanenv"
 	"github.com/joho/godotenv"
 	"github.com/pkg/errors"
 
 	// internal
-	"github.com/vishenosik/web/collections"
-	"github.com/vishenosik/web/env"
+	"github.com/vishenosik/CherryWatch/pkg/collections"
+	"github.com/vishenosik/CherryWatch/pkg/env"
+	"github.com/vishenosik/CherryWatch/pkg/operation"
 )
 
 var (
@@ -25,6 +28,7 @@ type Config struct {
 	StorePath  string `env:"STORE_PATH" default:"./storage/CherryWatch.db" validate:"required" desc:"Path to sqlite store"`
 	GrpcConfig GrpcServer
 	RestConfig RestServer
+	Testing    []string `env:"TESTING"`
 }
 
 type RestServer struct {
@@ -55,9 +59,18 @@ func mustLoadEnvConfig() Config {
 }
 
 func loadEnvConfig() (Config, error) {
-	conf := env.ReadEnv[Config]()
-	if collections.HasDuplicates(conf.GrpcConfig.Port, conf.RestConfig.Port) {
-		return Config{}, ErrServerPortMustBeUnique
+
+	var conf Config
+
+	fail := operation.FailWrapError(Config{}, "loadEnvConfig")
+
+	if err := cleanenv.ReadConfig(".env", &conf); err != nil {
+		return fail(errors.Wrap(err, "failed to read config"))
 	}
+
+	if collections.HasDuplicates(conf.GrpcConfig.Port, conf.RestConfig.Port) {
+		return fail(ErrServerPortMustBeUnique)
+	}
+
 	return conf, nil
 }

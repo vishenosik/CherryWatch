@@ -8,10 +8,10 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/vishenosik/CherryWatch/pkg/api"
+	attrs "github.com/vishenosik/CherryWatch/pkg/log"
 	"github.com/vishenosik/CherryWatch/pkg/models"
 	"github.com/vishenosik/CherryWatch/pkg/versions"
-	"github.com/vishenosik/web/api"
-	attrs "github.com/vishenosik/web/log"
 )
 
 const (
@@ -195,9 +195,9 @@ func newLoggingResponseWriter(w http.ResponseWriter) *loggingResponseWriter {
 	return &loggingResponseWriter{w, http.StatusOK}
 }
 
-func (lrw *loggingResponseWriter) WriteHeader(code int) {
-	lrw.statusCode = code
-	lrw.ResponseWriter.WriteHeader(code)
+func (lrw *loggingResponseWriter) WriteHeader(statusCode int) {
+	lrw.statusCode = statusCode
+	lrw.ResponseWriter.WriteHeader(statusCode)
 }
 
 func SetHeaders() func(next http.Handler) http.Handler {

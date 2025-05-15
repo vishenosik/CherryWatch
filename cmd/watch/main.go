@@ -35,7 +35,7 @@ import (
 func main() {
 	flag.Parse()
 
-	logo()
+	// logo()
 
 	ctx := context.Background()
 
