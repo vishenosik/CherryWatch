@@ -8,8 +8,8 @@ import (
 
 	"github.com/vishenosik/CherryWatch/internal/api/models"
 	srvmodels "github.com/vishenosik/CherryWatch/internal/services/models"
-	pkghttp "github.com/vishenosik/CherryWatch/pkg/http"
-	"github.com/vishenosik/CherryWatch/pkg/multierr"
+	pkghttp "github.com/vishenosik/web/http"
+	"github.com/vishenosik/web/multierr"
 )
 
 type SaveResponse struct {

@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/vishenosik/CherryWatch/internal/services/models"
-	logger "github.com/vishenosik/CherryWatch/pkg/log"
-	"github.com/vishenosik/CherryWatch/pkg/multierr"
+	logger "github.com/vishenosik/web/log"
+	"github.com/vishenosik/web/multierr"
 )
 
 type EndpointsSaver interface {

@@ -9,8 +9,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/vishenosik/CherryWatch/internal/services/models"
-	"github.com/vishenosik/CherryWatch/pkg/collections"
-	devCol "github.com/vishenosik/CherryWatch/pkg/collections"
+	"github.com/vishenosik/web/collections"
 )
 
 type Endpoint struct {
@@ -32,8 +31,7 @@ type Endpoint struct {
 type Endpoints = []*Endpoint
 
 func ToServiceEndpoints(edps Endpoints) models.Endpoints {
-	// TODO use ConvertSlice from github.com/vishenosik/CherryWatch/pkg/collections
-	return devCol.ConvertSlice(edps, ToServiceEndpoint)
+	return collections.ConvertSlice(edps, ToServiceEndpoint)
 }
 
 func ToServiceEndpoint(endpoint *Endpoint) *models.Endpoint {
@@ -58,8 +56,7 @@ func ToServiceEndpoint(endpoint *Endpoint) *models.Endpoint {
 }
 
 func FromServiceEndpoints(edps models.Endpoints) Endpoints {
-	// TODO use ConvertSlice from github.com/vishenosik/CherryWatch/pkg/collections
-	return devCol.ConvertSlice(edps, FromServiceEndpoint)
+	return collections.ConvertSlice(edps, FromServiceEndpoint)
 }
 
 func FromServiceEndpoint(endpoint *models.Endpoint) *Endpoint {

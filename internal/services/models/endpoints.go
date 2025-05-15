@@ -3,7 +3,7 @@ package models
 import (
 	"time"
 
-	"github.com/vishenosik/CherryWatch/pkg/multierr"
+	"github.com/vishenosik/web/multierr"
 
 	"github.com/pkg/errors"
 

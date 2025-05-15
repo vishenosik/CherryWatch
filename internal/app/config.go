@@ -13,9 +13,9 @@ import (
 	"github.com/pkg/errors"
 
 	// internal
-	"github.com/vishenosik/CherryWatch/pkg/collections"
-	"github.com/vishenosik/CherryWatch/pkg/env"
-	"github.com/vishenosik/CherryWatch/pkg/operation"
+	"github.com/vishenosik/web/collections"
+	"github.com/vishenosik/web/env"
+	"github.com/vishenosik/web/operation"
 )
 
 var (

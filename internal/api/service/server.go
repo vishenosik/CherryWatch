@@ -2,8 +2,8 @@ package service
 
 import (
 	"github.com/go-chi/chi/v5"
-	http_pkg "github.com/vishenosik/CherryWatch/pkg/http"
-	"github.com/vishenosik/CherryWatch/pkg/versions"
+	http_pkg "github.com/vishenosik/web/http"
+	"github.com/vishenosik/web/versions"
 )
 
 var route = http_pkg.MethodFunc("service")

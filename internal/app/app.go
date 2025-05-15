@@ -14,9 +14,9 @@ import (
 	"github.com/vishenosik/CherryWatch/internal/store/sql/sqlite"
 
 	appctx "github.com/vishenosik/CherryWatch/internal/app/context"
-	"github.com/vishenosik/CherryWatch/pkg/colors"
-	"github.com/vishenosik/CherryWatch/pkg/config"
-	logger "github.com/vishenosik/CherryWatch/pkg/log"
+	"github.com/vishenosik/web/colors"
+	"github.com/vishenosik/web/config"
+	logger "github.com/vishenosik/web/log"
 )
 
 const (

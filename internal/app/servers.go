@@ -7,12 +7,12 @@ import (
 	// pkg
 	"github.com/go-chi/chi/v5"
 	httpSwagger "github.com/swaggo/http-swagger/v2"
-	"github.com/vishenosik/CherryWatch/pkg/config"
-	logger "github.com/vishenosik/CherryWatch/pkg/log"
+	"github.com/vishenosik/web/config"
+	logger "github.com/vishenosik/web/log"
 
 	// internal
 
-	"github.com/vishenosik/CherryWatch/pkg/http"
+	"github.com/vishenosik/web/http"
 	// _ "github.com/vishenosik/CherryWatch/internal/gen/swagger"
 )
 
