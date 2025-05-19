@@ -16,7 +16,7 @@ import (
 	"github.com/vishenosik/web/colors"
 	"github.com/vishenosik/web/config"
 	webctx "github.com/vishenosik/web/context"
-	logger "github.com/vishenosik/web/log"
+	logger "github.com/vishenosik/web/logs"
 )
 
 const (

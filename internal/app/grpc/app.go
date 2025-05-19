@@ -8,7 +8,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/vishenosik/web/config"
-	dev "github.com/vishenosik/web/log"
+	dev "github.com/vishenosik/web/logs"
 	"google.golang.org/grpc"
 )
 

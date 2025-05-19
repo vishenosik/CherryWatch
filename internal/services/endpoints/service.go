@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/vishenosik/CherryWatch/internal/services/models"
-	logger "github.com/vishenosik/web/log"
+	logger "github.com/vishenosik/web/logs"
 	"github.com/vishenosik/web/multierr"
 )
 

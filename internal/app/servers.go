@@ -8,7 +8,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	httpSwagger "github.com/swaggo/http-swagger/v2"
 	"github.com/vishenosik/web/config"
-	logger "github.com/vishenosik/web/log"
+	logger "github.com/vishenosik/web/logs"
 
 	// internal
 
