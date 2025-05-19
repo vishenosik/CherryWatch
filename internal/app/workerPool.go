@@ -35,6 +35,10 @@ func NewPoolContext(ctx context.Context, subscriptions ...chan models.Task) (*Po
 	}, nil
 }
 
+func (p *Pool) MustRun() {
+	p.Start(context.Background())
+}
+
 func (p *Pool) Start(_ context.Context) {
 	p.pool.Start()
 
@@ -59,6 +63,6 @@ func (p *Pool) Start(_ context.Context) {
 
 }
 
-func (p *Pool) Stop() {
+func (p *Pool) Stop(_ context.Context) {
 	p.pool.Stop()
 }

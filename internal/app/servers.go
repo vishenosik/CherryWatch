@@ -27,7 +27,7 @@ func newHttpServer(conf Config, log *slog.Logger, services ...Service) Server {
 	router := chi.NewRouter()
 	router.Use(
 		http.RequestLogger(log_),
-		// http.ApiVersionMiddleware(versions.DoubleVersion{}, "2.0"),
+		// http.ApiVersionMiddleware(versions.DotVersion{}, "2.0"),
 	)
 
 	router.Get("/swagger/*", httpSwagger.Handler())

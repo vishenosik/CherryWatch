@@ -31,23 +31,23 @@ var (
   		"time_interval": 60000000000
 	}`
 
-	codeRangesOnly = `
-	{
-  		"id": "123e4567-e89b-12d3-a456-426614174000",
-  		"service_name": "inventory_service",
-  		"url": "https://inventory.example.com/health",
-  		"success_codes": ["200-299", "500-599"],
-  		"time_interval": 15000000000
-	}`
+	// codeRangesOnly = `
+	// {
+	// 	"id": "123e4567-e89b-12d3-a456-426614174000",
+	// 	"service_name": "inventory_service",
+	// 	"url": "https://inventory.example.com/health",
+	// 	"success_codes": ["200-299", "500-599"],
+	// 	"time_interval": 15000000000
+	// }`
 
-	emptyNotifications = `
-	{
-  		"id": "550e8400-e29b-41d4-a716-446655440000",
-  		"service_name": "empty_notifications",
-  		"url": "https://example.com",
-  		"notification_services": [],
-  		"time_interval": 30000000000
-	}`
+	// emptyNotifications = `
+	// {
+	// 	"id": "550e8400-e29b-41d4-a716-446655440000",
+	// 	"service_name": "empty_notifications",
+	// 	"url": "https://example.com",
+	// 	"notification_services": [],
+	// 	"time_interval": 30000000000
+	// }`
 
 	nullFields = `
 	{

@@ -2,11 +2,10 @@ package service
 
 import (
 	"github.com/go-chi/chi/v5"
-	http_pkg "github.com/vishenosik/web/http"
-	"github.com/vishenosik/web/versions"
+	_http "github.com/vishenosik/web/http"
 )
 
-var route = http_pkg.MethodFunc("service")
+var route = _http.MethodFunc("service")
 
 type serviceAPI struct {
 }
@@ -20,20 +19,23 @@ func NewHttpServer() *serviceAPI {
 func (srv server) Routers(r chi.Router) {
 	r.Group(func(r chi.Router) {
 
-		r.Use(http_pkg.SetHeaders())
+		r.Use(_http.SetHeaders())
 
 		r.Route(route("ping"), func(r chi.Router) {
 
-			r.Use(
-				http_pkg.ApiVersionMiddleware(versions.DoubleVersion{}, "1.1"),
+			versionMiddleware, versionHandler := _http.DotVersionMiddlewareHandler(
+				"1.1",
+				_http.Min("0.1.1"),
 			)
 
-			r.Get(http_pkg.BlankRoute, http_pkg.VersionedHandler(
-				http_pkg.VersionedHandlersMap{
-					"1.0": srv.ping_1_0(),
-					"1.1": srv.ping_1_1(),
-				},
-			))
+			r.Use(
+				versionMiddleware,
+			)
+
+			r.Get(_http.BlankRoute, versionHandler(_http.HandlersMap{
+				"1.0": srv.ping_1_0(),
+				"1.1": srv.ping_1_1(),
+			}))
 		})
 	})
 }

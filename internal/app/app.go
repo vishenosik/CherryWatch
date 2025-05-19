@@ -13,9 +13,9 @@ import (
 	"github.com/vishenosik/CherryWatch/internal/services/endpoints"
 	"github.com/vishenosik/CherryWatch/internal/store/sql/sqlite"
 
-	appctx "github.com/vishenosik/CherryWatch/internal/app/context"
 	"github.com/vishenosik/web/colors"
 	"github.com/vishenosik/web/config"
+	webctx "github.com/vishenosik/web/context"
 	logger "github.com/vishenosik/web/log"
 )
 
@@ -54,9 +54,11 @@ func NewApp() (*App, error) {
 	// Stores init
 	sqliteStore := sqlite.MustInitSqlite(conf.StorePath, log)
 
+	// Usecases init
 	endpointsService := endpoints.NewService(log, endpoints.Config{}, sqliteStore)
 
-	grpcServer := grpcApp.NewGrpcApp(
+	// Servers init
+	_ = grpcApp.NewGrpcApp(
 		log,
 		grpcApp.Config{
 			Server: config.Server{
@@ -72,21 +74,18 @@ func NewApp() (*App, error) {
 		service.NewHttpServer(),
 	)
 
-	app := newApp(log, grpcServer, httpServer)
+	// Subsystems init
 
-	app.pool = MustInitPool(endpointsService.TasksChan())
+	pool := MustInitPool(endpointsService.TasksChan())
 
-	return app, nil
-}
-
-func newApp(
-	logger *slog.Logger,
-	apps ...Server,
-) *App {
 	return &App{
-		log:     logger,
-		servers: apps,
-	}
+		log:  log,
+		pool: pool,
+		servers: []Server{
+			httpServer,
+			pool,
+		},
+	}, nil
 }
 
 func (app *App) MustRun() {
@@ -96,22 +95,18 @@ func (app *App) MustRun() {
 	for _, server := range app.servers {
 		go server.MustRun()
 	}
-
-	app.pool.Start(context.TODO())
 }
 
 func (app *App) Stop(ctx context.Context) {
 
 	const msg = "app stopping"
 
-	signal, ok := appctx.SignalCtx(ctx)
+	signal, ok := webctx.StopFromCtx(ctx)
 	if ok {
 		app.log.Info(msg, slog.String("signal", signal.Signal.String()))
 	} else {
 		app.log.Info(msg)
 	}
-
-	app.pool.Stop()
 
 	for _, server := range app.servers {
 		server.Stop(ctx)

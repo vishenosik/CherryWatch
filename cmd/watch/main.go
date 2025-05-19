@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/vishenosik/CherryWatch/internal/app"
-	appctx "github.com/vishenosik/CherryWatch/internal/app/context"
+	webctx "github.com/vishenosik/web/context"
 )
 
 // @title           CherryWatch
@@ -35,7 +35,7 @@ import (
 func main() {
 	flag.Parse()
 
-	// logo()
+	// Logo()
 
 	ctx := context.Background()
 
@@ -48,13 +48,16 @@ func main() {
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGTERM, syscall.SIGINT)
 
-	stopctx, cancel := context.WithTimeout(appctx.WithSignalCtx(ctx, <-stop), time.Second*5)
+	stopctx, cancel := context.WithTimeout(
+		webctx.WithStopCtx(ctx, <-stop),
+		time.Second*5,
+	)
 	defer cancel()
 
 	application.Stop(stopctx)
 }
 
-func logo() {
+func Logo() {
 	fmt.Print(`   
                                   +######-                         
                                 -         .##+.   -                
