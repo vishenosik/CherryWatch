@@ -7,8 +7,8 @@ import (
 	"net"
 
 	"github.com/pkg/errors"
-	"github.com/vishenosik/web/config"
-	dev "github.com/vishenosik/web/logs"
+	"github.com/vishenosik/gocherry/pkg/config"
+	dev "github.com/vishenosik/gocherry/pkg/logs"
 	"google.golang.org/grpc"
 )
 

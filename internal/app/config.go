@@ -8,8 +8,8 @@ import (
 	"github.com/pkg/errors"
 
 	// internal
-	"github.com/vishenosik/web/collections"
-	"github.com/vishenosik/web/operation"
+	"github.com/vishenosik/gocherry/pkg/collections"
+	"github.com/vishenosik/gocherry/pkg/operation"
 )
 
 var (

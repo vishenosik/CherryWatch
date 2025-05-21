@@ -12,7 +12,7 @@ import (
 	"github.com/vishenosik/CherryWatch/internal/api/service"
 	"github.com/vishenosik/CherryWatch/internal/services/endpoints"
 	"github.com/vishenosik/CherryWatch/internal/store/sql/sqlite"
-	"github.com/vishenosik/web/logs"
+	"github.com/vishenosik/gocherry/pkg/logs"
 
 	"net/http"
 

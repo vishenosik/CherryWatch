@@ -7,7 +7,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/vishenosik/CherryWatch/internal/services/models"
-	http_pkg "github.com/vishenosik/web/http"
+	http_pkg "github.com/vishenosik/gocherry/pkg/http"
 )
 
 var route = http_pkg.MethodFunc("endpoints")

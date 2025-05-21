@@ -10,7 +10,7 @@ import (
 
 	"github.com/vishenosik/CherryWatch/internal/app"
 	"github.com/vishenosik/gocherry"
-	webctx "github.com/vishenosik/web/context"
+	webctx "github.com/vishenosik/gocherry/pkg/context"
 )
 
 // @title           CherryWatch

@@ -9,7 +9,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/vishenosik/CherryWatch/internal/services/models"
-	"github.com/vishenosik/web/collections"
+	"github.com/vishenosik/gocherry/pkg/collections"
 )
 
 type Endpoint struct {

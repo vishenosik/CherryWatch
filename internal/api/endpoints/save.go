@@ -9,8 +9,8 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/vishenosik/CherryWatch/internal/api/models"
 	srvmodels "github.com/vishenosik/CherryWatch/internal/services/models"
-	_http "github.com/vishenosik/web/http"
-	"github.com/vishenosik/web/multierr"
+	_errors "github.com/vishenosik/gocherry/pkg/errors"
+	_http "github.com/vishenosik/gocherry/pkg/http"
 )
 
 type SaveResponse struct {
@@ -49,7 +49,7 @@ func (srv server) save_1_0() http.HandlerFunc {
 		ctx, cancel := context.WithCancel(r.Context())
 		defer cancel()
 
-		errs := new(multierr.Error)
+		errs := new(_errors.Error)
 
 		added, err := srv.service.SaveEndpoints(ctx, models.ToServiceEndpoints(endpoints))
 		if err != nil {

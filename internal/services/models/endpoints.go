@@ -3,7 +3,7 @@ package models
 import (
 	"time"
 
-	"github.com/vishenosik/web/multierr"
+	multierr "github.com/vishenosik/gocherry/pkg/errors"
 
 	"github.com/pkg/errors"
 

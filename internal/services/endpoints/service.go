@@ -8,8 +8,8 @@ import (
 
 	"github.com/vishenosik/CherryWatch/internal/services/models"
 	"github.com/vishenosik/gocherry"
-	logger "github.com/vishenosik/web/logs"
-	"github.com/vishenosik/web/multierr"
+	multierr "github.com/vishenosik/gocherry/pkg/errors"
+	logger "github.com/vishenosik/gocherry/pkg/logs"
 )
 
 type EndpointsSaver interface {

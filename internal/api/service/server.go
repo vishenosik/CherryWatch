@@ -2,7 +2,7 @@ package service
 
 import (
 	"github.com/go-chi/chi/v5"
-	_http "github.com/vishenosik/web/http"
+	_http "github.com/vishenosik/gocherry/pkg/http"
 )
 
 var route = _http.MethodFunc("service")

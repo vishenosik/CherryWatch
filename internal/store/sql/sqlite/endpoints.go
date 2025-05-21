@@ -11,7 +11,7 @@ import (
 	"github.com/pkg/errors"
 	srv_models "github.com/vishenosik/CherryWatch/internal/services/models"
 	"github.com/vishenosik/CherryWatch/internal/store/sql/models"
-	"github.com/vishenosik/web/multierr"
+	multierr "github.com/vishenosik/gocherry/pkg/errors"
 )
 
 type endpoints struct {
