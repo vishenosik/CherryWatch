@@ -3,13 +3,13 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
 	"github.com/vishenosik/CherryWatch/internal/app"
+	"github.com/vishenosik/gocherry"
 	webctx "github.com/vishenosik/web/context"
 )
 
@@ -33,6 +33,7 @@ import (
 // @externalDocs.description  OpenAPI
 // @externalDocs.url          https://swagger.io/resources/open-api/
 func main() {
+	gocherry.Flags()
 	flag.Parse()
 
 	// Logo()
@@ -40,9 +41,12 @@ func main() {
 	ctx := context.Background()
 
 	// App init
-	application := app.MustInitApp()
+	application, err := app.NewApp()
+	if err != nil {
+		panic(err)
+	}
 
-	application.MustRun()
+	application.Start(ctx)
 
 	// Graceful shut down
 	stop := make(chan os.Signal, 1)
@@ -55,45 +59,4 @@ func main() {
 	defer cancel()
 
 	application.Stop(stopctx)
-}
-
-func Logo() {
-	fmt.Print(`   
-                                  +######-                         
-                                -         .##+.   -                
-                      -#-   -##++--........    .##.                
-                      ####+     .             -##                  
-                       .#.+#-     +-.     .+###                    
-                        -#  .#+      -+###+-                       
-                         #-   .#+                                  
-                         .#     -#-                                
-                          #       ##                               
-                          #.       .#-                             
-                          #.         ##                            
-                         .#           ##                           
-                         +#            ##                          
-                        .#.             ##                         
-                        ##               ##                        
-                      .##                .##                       
-                     ###                  +#+--.                   
-            +   ### ###               -#- .##. +####.              
-                  .############     ## -+  --.+##+-+###.           
-                             .##   #-    .---.       .###          
-                               #- +#                   ###         
-                               #+ #                     ##-        
-        .                      #- #                     ##+        
-        ..                     #. --                    ##+        
-         #                    #+   #                    ##         
-          #.                 ##     -                  ##.         
-           ##              ##+                       .##           
-            .##+.      -####                       -#-             
-               ##########-                    .++.              
-
-   ____ _   _ _____ ____  ______   ____        ___  _____ ____ _   _ 
-  / ___| | | | ____|  _ \|  _ \ \ / /\ \      / / \|_   _/ ___| | | |
- | |   | |_| |  _| | |_) | |_) \ V /  \ \ /\ / / _ \ | || |   | |_| |
- | |___|  _  | |___|  _ <|  _ < | |    \ V  V / ___ \| || |___|  _  |
-  \____|_| |_|_____|_| \_\_| \_\|_|     \_/\_/_/   \_\_| \____|_| |_|
-                                                                     
-`)
 }

@@ -2,53 +2,43 @@ package app
 
 import (
 	"context"
-	"fmt"
-	"io"
+
+	"github.com/vishenosik/gocherry"
+	_http "github.com/vishenosik/gocherry/pkg/http"
+
 	"log/slog"
-	"os"
 
 	endpointsApi "github.com/vishenosik/CherryWatch/internal/api/endpoints"
 	"github.com/vishenosik/CherryWatch/internal/api/service"
-	grpcApp "github.com/vishenosik/CherryWatch/internal/app/grpc"
 	"github.com/vishenosik/CherryWatch/internal/services/endpoints"
 	"github.com/vishenosik/CherryWatch/internal/store/sql/sqlite"
+	"github.com/vishenosik/web/logs"
 
-	"github.com/vishenosik/web/colors"
-	"github.com/vishenosik/web/config"
-	webctx "github.com/vishenosik/web/context"
-	logger "github.com/vishenosik/web/logs"
+	"net/http"
+
+	// pkg
+	"github.com/go-chi/chi/v5"
+	httpSwagger "github.com/swaggo/http-swagger/v2"
 )
-
-const (
-	EnvDev  = "dev"
-	EnvProd = "prod"
-	EnvTest = "test"
-)
-
-type App struct {
-	log     *slog.Logger
-	servers []Server
-	pool    *Pool
-}
 
 type Server interface {
-	MustRun()
-	Stop(ctx context.Context)
+	Start(ctx context.Context) error
+	Stop(ctx context.Context) error
 }
 
-func MustInitApp() *App {
-	app, err := NewApp()
-	if err != nil {
-		panic(fmt.Sprintf("failed to create app %s", err))
-	}
-	return app
+type App struct {
+	Server
 }
 
 func NewApp() (*App, error) {
+	app, err := gocherry.NewApp()
+	if err != nil {
+		panic(err)
+	}
+
+	log := app.Log
 
 	conf := mustLoadEnvConfig()
-	log := setupLogger(conf.Env)
-
 	log.Debug("config loaded from env", slog.Any("config", conf))
 
 	// Stores init
@@ -57,96 +47,49 @@ func NewApp() (*App, error) {
 	// Usecases init
 	endpointsService := endpoints.NewService(log, endpoints.Config{}, sqliteStore)
 
-	// Servers init
-	_ = grpcApp.NewGrpcApp(
-		log,
-		grpcApp.Config{
-			Server: config.Server{
-				Port: conf.GrpcConfig.Port,
-			},
-		},
-		// authenticationService,
+	handler := _http.NewHttpServer(
+		log.With(logs.AppComponent("http")),
+		NewHttpServer(log,
+			endpointsApi.NewHttpServer(endpointsService),
+			service.NewHttpServer(),
+		),
 	)
 
-	httpServer := newHttpServer(
-		conf, log,
-		endpointsApi.NewHttpServer(endpointsService),
-		service.NewHttpServer(),
+	pool, err := gocherry.NewPool(
+		log.With(logs.AppComponent("worker pool")),
+		endpointsService.TasksChan(),
 	)
+	if err != nil {
+		return nil, err
+	}
 
-	// Subsystems init
-
-	pool := MustInitPool(endpointsService.TasksChan())
+	app.AddServices(handler, pool)
 
 	return &App{
-		log:  log,
-		pool: pool,
-		servers: []Server{
-			httpServer,
-			pool,
-		},
+		Server: app,
 	}, nil
+
 }
 
-func (app *App) MustRun() {
-
-	app.log.Info("start app")
-
-	for _, server := range app.servers {
-		go server.MustRun()
-	}
+type Service interface {
+	Routers(r chi.Router)
 }
 
-func (app *App) Stop(ctx context.Context) {
+func NewHttpServer(log *slog.Logger, services ...Service) http.Handler {
+	log_ := log.With(logs.AppComponent("http"))
 
-	const msg = "app stopping"
+	router := chi.NewRouter()
+	router.Use(
+		_http.RequestLogger(log_),
+		// http.ApiVersionMiddleware(versions.DotVersion{}, "2.0"),
+	)
 
-	signal, ok := webctx.StopFromCtx(ctx)
-	if ok {
-		app.log.Info(msg, slog.String("signal", signal.Signal.String()))
-	} else {
-		app.log.Info(msg)
-	}
+	router.Get("/swagger/*", httpSwagger.Handler())
 
-	for _, server := range app.servers {
-		server.Stop(ctx)
-	}
-
-	app.log.Info("app stopped")
-}
-
-func setupLogger(env string) *slog.Logger {
-	var handler slog.Handler
-	switch env {
-
-	case EnvProd:
-		handler = slog.NewJSONHandler(
-			os.Stdout,
-			&slog.HandlerOptions{Level: slog.LevelInfo},
-		)
-
-	case EnvTest:
-		handler = slog.NewJSONHandler(
-			io.Discard,
-			&slog.HandlerOptions{Level: slog.LevelInfo},
-		)
-
-	case EnvDev:
-		handler = logger.NewHandler(
-			logger.WithYamlMarshaller(),
-			logger.WithNumbersHighlight(colors.Blue),
-			logger.WithKeyWordsHighlight(map[string]colors.ColorCode{
-				logger.AttrError:     colors.Red,
-				logger.AttrOperation: colors.Green,
-			}),
-		)
-
-	default:
-		handler = slog.NewJSONHandler(
-			os.Stdout,
-			&slog.HandlerOptions{Level: slog.LevelDebug},
-		)
-
-	}
-	return slog.New(handler)
+	router.Route("/api", func(r chi.Router) {
+		for i := range services {
+			services[i].Routers(r)
+		}
+	})
+	return router
 }

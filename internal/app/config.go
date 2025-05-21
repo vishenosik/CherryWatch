@@ -3,18 +3,12 @@ package app
 import (
 	// std
 
-	"flag"
-	"log"
-	"os"
-
 	// pkg
 	"github.com/ilyakaznacheev/cleanenv"
-	"github.com/joho/godotenv"
 	"github.com/pkg/errors"
 
 	// internal
 	"github.com/vishenosik/web/collections"
-	"github.com/vishenosik/web/env"
 	"github.com/vishenosik/web/operation"
 )
 
@@ -37,17 +31,6 @@ type RestServer struct {
 
 type GrpcServer struct {
 	Port uint16 `env:"GRPC_PORT" default:"44844" desc:"gRPC server port"`
-}
-
-func init() {
-
-	flag.BoolFunc("config.info", "Show config schema information", env.ConfigInfo[Config](os.Stdout))
-	flag.Func("config.doc", "Update config example in docs", env.ConfigDoc[Config]())
-
-	if err := godotenv.Load(); err != nil {
-		log.Print("No .env file found")
-	}
-
 }
 
 func mustLoadEnvConfig() Config {

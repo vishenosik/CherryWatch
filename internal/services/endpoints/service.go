@@ -2,10 +2,12 @@ package endpoints
 
 import (
 	"context"
+	"log"
 	"log/slog"
 	"time"
 
 	"github.com/vishenosik/CherryWatch/internal/services/models"
+	"github.com/vishenosik/gocherry"
 	logger "github.com/vishenosik/web/logs"
 	"github.com/vishenosik/web/multierr"
 )
@@ -21,7 +23,7 @@ type service struct {
 	log            *slog.Logger
 	endpointsSaver EndpointsSaver
 	tokenTTL       time.Duration
-	tasksCH        chan models.Task
+	tasksCH        chan gocherry.PoolTask
 }
 
 type Config struct {
@@ -39,11 +41,11 @@ func NewService(
 		log:            logger,
 		tokenTTL:       config.TokenTTL,
 		endpointsSaver: endpointsSaver,
-		tasksCH:        make(chan models.Task, 1024),
+		tasksCH:        make(chan gocherry.PoolTask, 1024),
 	}
 }
 
-func (srv *service) TasksChan() chan models.Task {
+func (srv *service) TasksChan() chan gocherry.PoolTask {
 	return srv.tasksCH
 }
 
@@ -51,6 +53,14 @@ func (srv *service) SaveEndpoints(
 	ctx context.Context,
 	endpoints models.Endpoints,
 ) (added models.Endpoints, err error) {
+
+	srv.tasksCH <- gocherry.PoolTask{
+		ID: "edps",
+		Func: func() {
+			time.Sleep(time.Second * 3)
+			log.Println("SaveEndpoints")
+		},
+	}
 
 	errs := new(multierr.Error)
 	log := srv.log.With(
