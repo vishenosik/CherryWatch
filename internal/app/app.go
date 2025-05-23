@@ -2,9 +2,11 @@ package app
 
 import (
 	"context"
+	"path"
 
 	"github.com/vishenosik/gocherry"
 	_http "github.com/vishenosik/gocherry/pkg/http"
+	"github.com/vishenosik/gocherry/pkg/sql"
 
 	"log/slog"
 
@@ -15,6 +17,8 @@ import (
 	"github.com/vishenosik/gocherry/pkg/logs"
 
 	"net/http"
+
+	embed "github.com/vishenosik/CherryWatch"
 
 	// pkg
 	"github.com/go-chi/chi/v5"
@@ -38,14 +42,34 @@ func NewApp() (*App, error) {
 
 	log := app.Log
 
-	conf := mustLoadEnvConfig()
-	log.Debug("config loaded from env", slog.Any("config", conf))
-
 	// Stores init
-	sqliteStore := sqlite.MustInitSqlite(conf.StorePath, log)
+
+	store, err := sql.NewSqliteStore(
+		sql.WithMigration(
+			embed.Migrations,
+			path.Join(embed.MigrationsPath, "sqlite"),
+		),
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	db, err := store.Open(context.TODO())
+	if err != nil {
+		panic(err)
+	}
+
+	endpointsStore := sqlite.NewEndpoints(db)
 
 	// Usecases init
-	endpointsService := endpoints.NewService(log, endpoints.Config{}, sqliteStore)
+
+	endpointsService := endpoints.NewService(
+		log,
+		endpoints.Config{},
+		endpointsStore,
+	)
+
+	// Services init
 
 	handler := _http.NewHttpServer(
 		log.With(logs.AppComponent("http")),
@@ -75,12 +99,12 @@ type Service interface {
 	Routers(r chi.Router)
 }
 
-func NewHttpServer(log *slog.Logger, services ...Service) http.Handler {
-	log_ := log.With(logs.AppComponent("http"))
+func NewHttpServer(logger *slog.Logger, services ...Service) http.Handler {
+	log := logger.With(logs.AppComponent("http"))
 
 	router := chi.NewRouter()
 	router.Use(
-		_http.RequestLogger(log_),
+		_http.RequestLogger(log),
 		// http.ApiVersionMiddleware(versions.DotVersion{}, "2.0"),
 	)
 

@@ -12,8 +12,10 @@ import (
 
 func Test_getAllEndpoints(t *testing.T) {
 
-	store, cancel := suite(t)
+	x, cancel := suite(t)
 	defer cancel()
+
+	store := NewEndpoints(x)
 
 	edps := srv_models.Endpoints{
 		{
@@ -60,8 +62,10 @@ func Test_getAllEndpoints(t *testing.T) {
 
 func Test_createEndpoints(t *testing.T) {
 
-	store, cancel := suite(t)
+	x, cancel := suite(t)
 	defer cancel()
+
+	store := NewEndpoints(x)
 
 	edps := srv_models.Endpoints{
 		{

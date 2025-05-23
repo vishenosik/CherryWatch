@@ -12,13 +12,14 @@ import (
 	srv_models "github.com/vishenosik/CherryWatch/internal/services/models"
 	"github.com/vishenosik/CherryWatch/internal/store/sql/models"
 	multierr "github.com/vishenosik/gocherry/pkg/errors"
+	gsql "github.com/vishenosik/gocherry/pkg/sql"
 )
 
 type endpoints struct {
 	db *sqlx.DB
 }
 
-func newEndpoints(db *sqlx.DB) *endpoints {
+func NewEndpoints(db *sqlx.DB) *endpoints {
 	return &endpoints{
 		db: db,
 	}
@@ -75,7 +76,10 @@ func createEndpoints(ctx context.Context, db *sqlx.DB, edps ...*models.Endpoint)
 		}
 
 		if _, err := tx.NamedStmt(insertEdps).Exec(edp); err != nil {
-			if err := uniqueError(err, uniqueMapper); err != nil {
+			if err := gsql.SqliteUniqueError(err, uniqueMapper); err != nil {
+				if errors.Is(err, gsql.ErrAlreadyExists) {
+					return models.ErrAlreadyExists
+				}
 				return err
 			}
 			return errors.Wrap(err, "insert endpoints fail")
